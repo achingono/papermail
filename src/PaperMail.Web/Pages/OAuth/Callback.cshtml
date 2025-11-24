@@ -1,0 +1,64 @@
+@page
+@model PaperMail.Web.Pages.OAuth.CallbackModel
+@{
+    ViewData["Title"] = "Authenticating...";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PaperMail</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f5f5f5;
+        }
+        .loading {
+            text-align: center;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 20px;
+            border: 4px solid #ddd;
+            border-top-color: #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @@keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        .error {
+            color: #d00;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        @if (string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="spinner"></div>
+            <h1>Authenticating...</h1>
+        }
+        else
+        {
+            <h1>Authentication Error</h1>
+            <p class="error">@Model.ErrorMessage</p>
+            <p><a href="/oauth/login">Try again</a></p>
+        }
+    </div>
+</body>
+</html>

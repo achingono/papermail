@@ -38,6 +38,18 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[/home/achingono/source/repos/papermail/src/PaperMail.Web/Pages/OAuth/Callback.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvT0F1dGgvQ2FsbGJhY2suY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/achingono/source/repos/papermail/src/PaperMail.Web/Pages/OAuth/Login.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvT0F1dGgvTG9naW4uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/achingono/source/repos/papermail/src/PaperMail.Web/Pages/OAuth/Logout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvT0F1dGgvTG9nb3V0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/achingono/source/repos/papermail/src/PaperMail.Web/Pages/Privacy.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUHJpdmFjeS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

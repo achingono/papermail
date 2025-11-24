@@ -52,3 +52,12 @@
 /home/achingono/source/repos/papermail/src/PaperMail.Web/obj/Debug/net8.0/PaperMail.Web.pdb
 /home/achingono/source/repos/papermail/src/PaperMail.Web/obj/Debug/net8.0/PaperMail.Web.genruntimeconfig.cache
 /home/achingono/source/repos/papermail/src/PaperMail.Web/obj/Debug/net8.0/ref/PaperMail.Web.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.Configuration.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.Configuration.Abstractions.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.Configuration.Binder.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.Diagnostics.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.Http.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.Logging.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/System.Diagnostics.DiagnosticSource.dll

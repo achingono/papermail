@@ -125,3 +125,10 @@
 /home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/obj/Debug/net8.0/PaperMail.Infrastructure.Tests.pdb
 /home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/obj/Debug/net8.0/PaperMail.Infrastructure.Tests.genruntimeconfig.cache
 /home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/obj/Debug/net8.0/ref/PaperMail.Infrastructure.Tests.dll
+/home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/bin/Debug/net8.0/Microsoft.Extensions.Configuration.dll
+/home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/bin/Debug/net8.0/Microsoft.Extensions.Configuration.Binder.dll
+/home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.dll
+/home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/bin/Debug/net8.0/Microsoft.Extensions.Diagnostics.dll
+/home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/bin/Debug/net8.0/Microsoft.Extensions.Http.dll
+/home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/bin/Debug/net8.0/Microsoft.Extensions.Logging.dll
+/home/achingono/source/repos/papermail/test/PaperMail.Infrastructure.Tests/bin/Debug/net8.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll

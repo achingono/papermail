@@ -4,6 +4,7 @@ using PaperMail.Core.Interfaces;
 using PaperMail.Infrastructure.Authentication;
 using PaperMail.Infrastructure.Configuration;
 using PaperMail.Infrastructure.Email;
+using PaperMail.Web.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,10 @@ builder.Services.Configure<OAuthSettings>(builder.Configuration.GetSection("OAut
 builder.Services.AddSingleton<ITokenStorage, TokenStorage>();
 builder.Services.AddSingleton<IMailKitWrapper, MailKitWrapper>();
 builder.Services.AddScoped<IEmailRepository, ImapEmailRepository>();
+
+// Register OAuth service
+builder.Services.AddHttpClient(); // Required for IOAuthService
+builder.Services.AddScoped<IOAuthService, OAuthService>();
 
 // Register application services
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -55,6 +60,10 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseSession();
+
+// Add authentication middleware
+app.UseMiddleware<AuthenticationMiddleware>();
+
 app.UseAuthorization();
 
 app.MapRazorPages();
