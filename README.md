@@ -71,6 +71,38 @@ docker compose down -v
 * For production, replace simple-oidc-provider with a hardened identity platform and configure TLS for mailserver.
 * Current IMAP access flow still uses OAuth access token, but the local mailserver expects username/password; future iteration may introduce a credential bridging layer or switch to basic authentication for local dev.
 
+## End-to-End Tests (Playwright)
+
+Playwright tests live in `test/PaperMail.EndToEnd.Tests`.
+
+### Prerequisites
+
+1. Docker stack running (`docker compose up -d`)
+2. Browsers installed for Playwright.
+
+Install browsers after first build:
+ 
+```bash
+dotnet build
+bash test/PaperMail.EndToEnd.Tests/bin/Debug/net8.0/playwright.sh install
+```
+
+### Running Tests
+
+```bash
+PAPERMAIL_BASE_URL=http://localhost:8080 dotnet test test/PaperMail.EndToEnd.Tests
+```
+
+### Included Scenarios
+
+* OAuth login and Inbox load
+* Compose page form presence
+* Keyboard shortcuts: `c` (compose), `i` (inbox)
+
+### Adjusting Credentials
+
+Update OIDC user/password in `docker-compose.yml` USERS env and modify `PlaywrightFixture.LoginAsync` if needed.
+
 # PaperMail - Email Client for E-Ink Devices
 
 ## Project Overview
@@ -83,59 +115,59 @@ To provide a seamless, distraction-free email experience optimized for the calm,
 
 ## Target Audience
 
-- **Primary**: Users of paper tablets with built-in browsers (Kindle Scribe, Kobo Elipsa, reMarkable, etc.)
-- **Secondary**: Users seeking a minimal, low-bandwidth email interface
-- **Use Cases**:
-  - Reading and responding to emails on E-Ink devices
-  - Low-bandwidth environments
-  - Distraction-free email management
-  - Accessibility-focused email access
+* **Primary**: Users of paper tablets with built-in browsers (Kindle Scribe, Kobo Elipsa, reMarkable, etc.)
+* **Secondary**: Users seeking a minimal, low-bandwidth email interface
+* **Use Cases**:
+  * Reading and responding to emails on E-Ink devices
+  * Low-bandwidth environments
+  * Distraction-free email management
+  * Accessibility-focused email access
 
 ## Core Principles
 
 ### 1. E-Ink Optimized
 
-- Minimal screen refreshes to prevent E-Ink ghosting
-- High contrast, grayscale-friendly design
-- Static content generation wherever possible
-- Reduced animations and transitions
+* Minimal screen refreshes to prevent E-Ink ghosting
+* High contrast, grayscale-friendly design
+* Static content generation wherever possible
+* Reduced animations and transitions
 
 ### 2. Simplicity First
 
-- Server-side rendering for maximum compatibility
-- Progressive enhancement approach
-- Graceful degradation for older browsers
-- Minimal JavaScript execution
+* Server-side rendering for maximum compatibility
+* Progressive enhancement approach
+* Graceful degradation for older browsers
+* Minimal JavaScript execution
 
 ### 3. Performance
 
-- Fast page loads even on slow connections
-- Efficient IMAP/SMTP protocol usage
-- Minimal client-side processing
-- Optimized asset delivery
+* Fast page loads even on slow connections
+* Efficient IMAP/SMTP protocol usage
+* Minimal client-side processing
+* Optimized asset delivery
 
 ### 4. Privacy & Security
 
-- OAuth 2.0 as primary authentication method
-- Secure credential storage
-- No tracking or analytics
-- Minimal external dependencies
+* OAuth 2.0 as primary authentication method
+* Secure credential storage
+* No tracking or analytics
+* Minimal external dependencies
 
 ## Key Constraints
 
 ### E-Ink Display Limitations
 
-- Slow refresh rates (300–1000ms)
-- Limited color palette (typically grayscale)
-- Variable browser engine capabilities
-- Reduced JavaScript performance
+* Slow refresh rates (300–1000ms)
+* Limited color palette (typically grayscale)
+* Variable browser engine capabilities
+* Reduced JavaScript performance
 
 ### Browser Engine Constraints
 
-- Older WebKit or Chromium versions
-- Limited CSS3 support
-- Reduced JavaScript API availability
-- Unpredictable feature support
+* Older WebKit or Chromium versions
+* Limited CSS3 support
+* Reduced JavaScript API availability
+* Unpredictable feature support
 
 ## Project Goals
 
@@ -148,22 +180,22 @@ To provide a seamless, distraction-free email experience optimized for the calm,
 
 ## Success Metrics
 
-- Page load time < 2 seconds on 3G connection
-- Time to interactive < 3 seconds
-- HTML size < 50KB per page
-- CSS bundle < 30KB
-- JavaScript bundle < 20KB
-- Support for browsers dating back to 2015
+* Page load time < 2 seconds on 3G connection
+* Time to interactive < 3 seconds
+* HTML size < 50KB per page
+* CSS bundle < 30KB
+* JavaScript bundle < 20KB
+* Support for browsers dating back to 2015
 
 ## Documentation Structure
 
-- **[Technology Stack](./docs/TECH_STACK.md)**: Detailed technology choices and rationale
-- **[Features Specification](./docs/FEATURES.md)**: Complete feature list and requirements
-- **[Architecture](./docs/ARCHITECTURE.md)**: System design and folder structure
-- **[Authentication](./docs/AUTHENTICATION.md)**: OAuth and security implementation
-- **[UI/UX Guidelines](./docs/UI_GUIDELINES.md)**: E-Ink specific design patterns
-- **[API Reference](./docs/API.md)**: Internal API documentation (future)
-- **[Deployment](./docs/DEPLOYMENT.md)**: Hosting and deployment guide (future)
+* **[Technology Stack](./docs/TECH_STACK.md)**: Detailed technology choices and rationale
+* **[Features Specification](./docs/FEATURES.md)**: Complete feature list and requirements
+* **[Architecture](./docs/ARCHITECTURE.md)**: System design and folder structure
+* **[Authentication](./docs/AUTHENTICATION.md)**: OAuth and security implementation
+* **[UI/UX Guidelines](./docs/UI_GUIDELINES.md)**: E-Ink specific design patterns
+* **[API Reference](./docs/API.md)**: Internal API documentation (future)
+* **[Deployment](./docs/DEPLOYMENT.md)**: Hosting and deployment guide (future)
 
 ## Getting Started
 

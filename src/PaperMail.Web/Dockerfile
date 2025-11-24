@@ -1,12 +1,11 @@
 # syntax=docker/dockerfile:1
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY PaperMail.sln ./
 COPY src/PaperMail.Core/PaperMail.Core.csproj src/PaperMail.Core/
 COPY src/PaperMail.Application/PaperMail.Application.csproj src/PaperMail.Application/
 COPY src/PaperMail.Infrastructure/PaperMail.Infrastructure.csproj src/PaperMail.Infrastructure/
 COPY src/PaperMail.Web/PaperMail.Web.csproj src/PaperMail.Web/
-RUN dotnet restore PaperMail.sln
+RUN dotnet restore src/PaperMail.Web/PaperMail.Web.csproj
 COPY src/ ./src/
 WORKDIR /src/src/PaperMail.Web
 RUN dotnet publish -c Release -o /app/publish
