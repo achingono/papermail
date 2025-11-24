@@ -61,3 +61,5 @@
 /home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.Logging.dll
 /home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
 /home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/System.Diagnostics.DiagnosticSource.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/package-lock.json
+/home/achingono/source/repos/papermail/src/PaperMail.Web/bin/Debug/net8.0/package.json

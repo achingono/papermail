@@ -418,4 +418,5 @@ FodyWeavers.xsd
 *.msp
 
 # Helm packaged charts
-*.tgz
+*.tgznode_modules/
+*.log

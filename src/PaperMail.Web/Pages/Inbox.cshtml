@@ -7,35 +7,33 @@
 <div class="container">
     <header class="page-header">
         <h1>Inbox</h1>
-        <nav class="header-actions">
-            <a href="/compose" class="btn btn-primary">Compose</a>
-            <a href="/settings" class="btn btn-secondary">Settings</a>
-        </nav>
+        <a href="/compose" class="btn btn-primary">Compose</a>
     </header>
 
     @if (!Model.Emails.Any())
     {
         <div class="empty-state">
-            <p>No emails to display</p>
+            <p>No emails in your inbox</p>
+            <p class="mt-4"><a href="/compose" class="btn btn-primary">Compose your first email</a></p>
         </div>
     }
     else
     {
-        <div class="email-list">
+        <div class="space-y-0">
             @foreach (var email in Model.Emails)
             {
-                <article class="email-item @(email.IsRead ? "read" : "unread")">
-                    <a href="/email/@email.Id" class="email-link">
-                        <div class="email-header">
-                            <span class="email-from">@email.From</span>
-                            <time class="email-date" datetime="@email.ReceivedAt.ToString("o")">
+                <article class="email-item @(email.IsRead ? "read" : "unread")" data-email-id="@email.Id">
+                    <a href="/email/@email.Id" class="block p-4 no-underline hover:bg-eink-gray-light">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="flex-1 truncate">@email.From</span>
+                            <time class="text-sm ml-4" datetime="@email.ReceivedAt.ToString("o")">
                                 @email.ReceivedAt.ToString("MMM dd")
                             </time>
                         </div>
-                        <h2 class="email-subject">@email.Subject</h2>
+                        <h2 class="text-lg mb-1">@email.Subject</h2>
                         @if (email.HasAttachments)
                         {
-                            <span class="attachment-indicator" aria-label="Has attachments">📎</span>
+                            <span class="text-sm" aria-label="Has attachments">📎 Attachment</span>
                         }
                     </a>
                 </article>
@@ -47,12 +45,16 @@
             <nav class="pagination" aria-label="Page navigation">
                 @if (Model.CurrentPage > 0)
                 {
-                    <a href="?page=@(Model.CurrentPage - 1)" class="pagination-prev">Previous</a>
+                    <a href="?page=@(Model.CurrentPage - 1)" class="btn btn-secondary" accesskey="p">← Previous</a>
+                }
+                else
+                {
+                    <span></span>
                 }
                 <span class="pagination-info">Page @(Model.CurrentPage + 1) of @Model.TotalPages</span>
                 @if (Model.CurrentPage < Model.TotalPages - 1)
                 {
-                    <a href="?page=@(Model.CurrentPage + 1)" class="pagination-next">Next</a>
+                    <a href="?page=@(Model.CurrentPage + 1)" class="btn btn-secondary" accesskey="n">Next →</a>
                 }
             </nav>
         }

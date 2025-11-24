@@ -5,6 +5,10 @@
 }
 
 <div class="container">
+    <nav class="breadcrumb">
+        <a href="/inbox">← Inbox</a>
+    </nav>
+
     <header class="page-header">
         <h1>Compose Email</h1>
     </header>
@@ -12,14 +16,15 @@
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <div class="alert alert-error" role="alert">
-            @Model.ErrorMessage
+            <strong>Error:</strong> @Model.ErrorMessage
         </div>
     }
 
     @if (Model.ValidationErrors.Any())
     {
         <div class="alert alert-error" role="alert">
-            <ul>
+            <strong>Please fix the following errors:</strong>
+            <ul class="list-disc ml-6 mt-2">
                 @foreach (var error in Model.ValidationErrors)
                 {
                     <li>@error</li>
@@ -28,30 +33,46 @@
         </div>
     }
 
-    <form method="post" class="compose-form">
+    <form method="post" data-validate>
         <div class="form-group">
             <label for="to">To:</label>
-            <input type="text" id="to" name="EmailRequest.To" asp-for="EmailRequest.To" 
-                   placeholder="recipient@example.com (comma-separated for multiple)" 
-                   required aria-required="true" />
+            <input type="text" 
+                   id="to" 
+                   name="EmailRequest.To" 
+                   asp-for="EmailRequest.To" 
+                   placeholder="recipient@example.com" 
+                   required 
+                   aria-required="true"
+                   aria-describedby="to-help" />
+            <p id="to-help" class="text-sm text-eink-gray mt-1">Separate multiple recipients with commas</p>
         </div>
 
         <div class="form-group">
             <label for="subject">Subject:</label>
-            <input type="text" id="subject" name="EmailRequest.Subject" asp-for="EmailRequest.Subject" 
-                   required aria-required="true" maxlength="200" />
+            <input type="text" 
+                   id="subject" 
+                   name="EmailRequest.Subject" 
+                   asp-for="EmailRequest.Subject" 
+                   required 
+                   aria-required="true" 
+                   maxlength="200" />
         </div>
 
         <div class="form-group">
             <label for="body">Message:</label>
-            <textarea id="body" name="EmailRequest.BodyPlain" asp-for="EmailRequest.BodyPlain" 
-                      rows="20" required aria-required="true"></textarea>
+            <textarea id="body" 
+                      name="EmailRequest.BodyPlain" 
+                      asp-for="EmailRequest.BodyPlain" 
+                      rows="20" 
+                      required 
+                      aria-required="true"
+                      class="font-mono"></textarea>
         </div>
 
-        <div class="form-actions">
-            <button type="submit" name="action" value="send" class="btn btn-primary">Send</button>
+        <div class="flex gap-3 mt-6">
+            <button type="submit" name="action" value="send" class="btn btn-primary">Send Email</button>
             <button type="submit" name="action" value="draft" class="btn btn-secondary">Save Draft</button>
-            <a href="/inbox" class="btn btn-tertiary">Cancel</a>
+            <a href="/inbox" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>

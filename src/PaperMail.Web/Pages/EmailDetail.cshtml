@@ -7,70 +7,80 @@
 @if (Model.Email == null)
 {
     <div class="container">
-        <p class="error-message">Email not found</p>
-        <a href="/inbox" class="btn btn-secondary">Back to Inbox</a>
+        <div class="empty-state">
+            <p class="text-xl mb-4">Email not found</p>
+            <a href="/inbox" class="btn btn-primary">Back to Inbox</a>
+        </div>
     </div>
 }
 else
 {
     <div class="container">
-        <header class="email-header">
-            <nav class="breadcrumb">
-                <a href="/inbox">← Back to Inbox</a>
-            </nav>
-            <h1 class="email-subject">@Model.Email.Subject</h1>
-            <div class="email-meta">
-                <div class="email-from">
-                    <strong>From:</strong> @Model.Email.From
+        <nav class="breadcrumb">
+            <a href="/inbox" accesskey="i">← Inbox</a>
+        </nav>
+
+        <article class="mt-6">
+            <header class="mb-6">
+                <h1 class="text-2xl mb-4">@Model.Email.Subject</h1>
+                <div class="email-meta">
+                    <div class="flex items-start">
+                        <strong class="w-20">From:</strong>
+                        <span>@Model.Email.From</span>
+                    </div>
+                    <div class="flex items-start">
+                        <strong class="w-20">To:</strong>
+                        <span>@string.Join(", ", Model.Email.To)</span>
+                    </div>
+                    <div class="flex items-start">
+                        <strong class="w-20">Date:</strong>
+                        <time datetime="@Model.Email.ReceivedAt.ToString("o")">
+                            @Model.Email.ReceivedAt.ToString("MMMM dd, yyyy HH:mm")
+                        </time>
+                    </div>
                 </div>
-                <div class="email-to">
-                    <strong>To:</strong> @string.Join(", ", Model.Email.To)
-                </div>
-                <time class="email-date" datetime="@Model.Email.ReceivedAt.ToString("o")">
-                    @Model.Email.ReceivedAt.ToString("MMMM dd, yyyy HH:mm")
-                </time>
+            </header>
+
+            @if (Model.Email.Attachments.Any())
+            {
+                <section class="mb-6 p-4 border-2 border-eink-gray-light">
+                    <h2 class="font-bold mb-3">Attachments (@Model.Email.Attachments.Count)</h2>
+                    <ul class="attachment-list space-y-2">
+                        @foreach (var attachment in Model.Email.Attachments)
+                        {
+                            <li class="attachment-item">
+                                <span class="attachment-icon">📎</span>
+                                <span class="font-semibold">@attachment.FileName</span>
+                                <span class="text-sm text-eink-gray ml-2">(@(attachment.SizeBytes / 1024) KB)</span>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+
+            <div class="email-body">
+                @if (!string.IsNullOrEmpty(Model.Email.BodyHtml))
+                {
+                    @* TODO: Sanitize HTML in production *@
+                    <div class="prose max-w-none">
+                        @Html.Raw(Model.Email.BodyHtml)
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(Model.Email.BodyPlain))
+                {
+                    <pre class="email-body-plain">@Model.Email.BodyPlain</pre>
+                }
+                else
+                {
+                    <p class="text-eink-gray italic">(No content)</p>
+                }
             </div>
-        </header>
-
-        @if (Model.Email.Attachments.Any())
-        {
-            <section class="attachments">
-                <h2>Attachments (@Model.Email.Attachments.Count)</h2>
-                <ul class="attachment-list">
-                    @foreach (var attachment in Model.Email.Attachments)
-                    {
-                        <li class="attachment-item">
-                            <span class="attachment-icon">📎</span>
-                            <span class="attachment-name">@attachment.FileName</span>
-                            <span class="attachment-size">(@(attachment.SizeBytes / 1024) KB)</span>
-                        </li>
-                    }
-                </ul>
-            </section>
-        }
-
-        <article class="email-body">
-            @if (!string.IsNullOrEmpty(Model.Email.BodyHtml))
-            {
-                @* Sanitize HTML in production *@
-                <div class="email-body-html">
-                    @Html.Raw(Model.Email.BodyHtml)
-                </div>
-            }
-            else if (!string.IsNullOrEmpty(Model.Email.BodyPlain))
-            {
-                <pre class="email-body-plain">@Model.Email.BodyPlain</pre>
-            }
-            else
-            {
-                <p class="empty-body">(No content)</p>
-            }
         </article>
 
         <footer class="email-actions">
-            <a href="/compose?reply=@Model.Email.Id" class="btn btn-primary">Reply</a>
+            <a href="/compose?reply=@Model.Email.Id" class="btn btn-primary" accesskey="r">Reply</a>
             <a href="/compose?forward=@Model.Email.Id" class="btn btn-secondary">Forward</a>
-            <a href="/inbox" class="btn btn-secondary">Back to Inbox</a>
+            <a href="/inbox" class="btn btn-secondary" accesskey="i">Inbox</a>
         </footer>
     </div>
 }
