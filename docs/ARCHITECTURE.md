@@ -198,16 +198,16 @@ src/
 │       ├── SmtpSettings.cs           # SMTP configuration
 │       └── OAuthSettings.cs          # OAuth configuration
 │
-└── PaperMail.Tests/                   # Test projects
-    ├── UnitTests/                     # Unit tests
-    │   ├── Services/
-    │   ├── Repositories/
-    │   └── Validators/
-    ├── IntegrationTests/              # Integration tests
-    │   ├── Email/
-    │   └── Authentication/
-    └── E2ETests/                      # End-to-end tests
-        └── Pages/
+└── test/                              # All automated tests (80%+ coverage target)
+    ├── PaperMail.Core.Tests/          # Domain unit tests
+    ├── PaperMail.Application.Tests/   # Application service tests
+    ├── PaperMail.Infrastructure.Tests/# Infrastructure integration tests (IMAP/SMTP/OAuth stubs)
+    ├── PaperMail.Web.Tests/           # Web layer unit + minimal functional tests
+    ├── Playwright/                    # UI + API end-to-end tests (Playwright)
+    │   ├── Fixtures/                  # Reusable Playwright fixtures
+    │   ├── Scenarios/                 # User journey specs
+    │   └── Accessibility/             # Axe accessibility checks
+    └── Coverage/                      # Generated coverage reports (lcov, Cobertura)
 ```
 
 ## Layer Responsibilities
@@ -452,7 +452,7 @@ builder.Services.AddHsts(options => { ... });
 3. Implement infrastructure in `PaperMail.Infrastructure/`
 4. Create view models in `PaperMail.Web/Models/`
 5. Create Razor Page in `PaperMail.Web/Pages/`
-6. Write tests in `PaperMail.Tests/`
+6. Write tests in `test/`
 
 ### 2. Adding a New Page
 
@@ -527,10 +527,12 @@ PaperMail.Infrastructure/
 
 ## Testing Strategy
 
-- **Unit Tests**: Services, validators, mappers
-- **Integration Tests**: IMAP/SMTP operations, OAuth flows
-- **E2E Tests**: Critical user flows (login, read, compose, send)
-- **Browser Tests**: Target E-Ink device browsers
+- **Unit Tests (test/*Tests)**: Entities, value objects, services, validators
+- **Integration Tests (Infrastructure.Tests)**: IMAP/SMTP wrapper, OAuth token flow (mock providers)
+- **Web Tests (Web.Tests)**: Razor Page handlers, tag helpers
+- **Playwright UI/API (test/Playwright)**: Login, inbox navigation, compose/send, accessibility scan
+- **Coverage Target**: Enforced >= 80% line + branch via `dotnet test /p:CollectCoverage=true` and thresholds
+- **Browser Tests**: Target E-Ink device browsers via Playwright runners and emulation
 
 ## Security Layers
 

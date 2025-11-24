@@ -1,0 +1,138 @@
+{
+  "version": 3,
+  "targets": {
+    "net8.0": {
+      "PaperMail.Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "dependencies": {
+          "PaperMail.Core": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/PaperMail.Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/PaperMail.Application.dll": {}
+        }
+      },
+      "PaperMail.Core/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/PaperMail.Core.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/PaperMail.Core.dll": {}
+        }
+      },
+      "PaperMail.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "dependencies": {
+          "PaperMail.Core": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/PaperMail.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/PaperMail.Infrastructure.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "PaperMail.Application/1.0.0": {
+      "type": "project",
+      "path": "../PaperMail.Application/PaperMail.Application.csproj",
+      "msbuildProject": "../PaperMail.Application/PaperMail.Application.csproj"
+    },
+    "PaperMail.Core/1.0.0": {
+      "type": "project",
+      "path": "../PaperMail.Core/PaperMail.Core.csproj",
+      "msbuildProject": "../PaperMail.Core/PaperMail.Core.csproj"
+    },
+    "PaperMail.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../PaperMail.Infrastructure/PaperMail.Infrastructure.csproj",
+      "msbuildProject": "../PaperMail.Infrastructure/PaperMail.Infrastructure.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net8.0": [
+      "PaperMail.Application >= 1.0.0",
+      "PaperMail.Infrastructure >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "/home/achingono/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/home/achingono/source/repos/papermail/src/PaperMail.Web/PaperMail.Web.csproj",
+      "projectName": "PaperMail.Web",
+      "projectPath": "/home/achingono/source/repos/papermail/src/PaperMail.Web/PaperMail.Web.csproj",
+      "packagesPath": "/home/achingono/.nuget/packages/",
+      "outputPath": "/home/achingono/source/repos/papermail/src/PaperMail.Web/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/home/achingono/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net8.0"
+      ],
+      "sources": {
+        "/usr/share/dotnet/library-packs": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "projectReferences": {
+            "/home/achingono/source/repos/papermail/src/PaperMail.Application/PaperMail.Application.csproj": {
+              "projectPath": "/home/achingono/source/repos/papermail/src/PaperMail.Application/PaperMail.Application.csproj"
+            },
+            "/home/achingono/source/repos/papermail/src/PaperMail.Infrastructure/PaperMail.Infrastructure.csproj": {
+              "projectPath": "/home/achingono/source/repos/papermail/src/PaperMail.Infrastructure/PaperMail.Infrastructure.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      }
+    },
+    "frameworks": {
+      "net8.0": {
+        "targetAlias": "net8.0",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.AspNetCore.App": {
+            "privateAssets": "none"
+          },
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.415/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

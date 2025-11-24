@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{7D83F2D2-6959-4A2C-893B-F16709B6A082}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaperMail.Core", "src\PaperMail.Core\PaperMail.Core.csproj", "{F75D0396-45ED-4E0C-B2C6-14C3FDAB5C53}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaperMail.Application", "src\PaperMail.Application\PaperMail.Application.csproj", "{4EF739E7-19D0-4F5E-A194-7F0364AFD0F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaperMail.Infrastructure", "src\PaperMail.Infrastructure\PaperMail.Infrastructure.csproj", "{8A3D7ED6-7849-4DEF-AE30-38C1872743CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaperMail.Web", "src\PaperMail.Web\PaperMail.Web.csproj", "{0F67452F-7796-4DF0-8545-FB02274F2C32}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{D91A7D8D-3855-401E-8935-0E51A3056551}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaperMail.Core.Tests", "test\PaperMail.Core.Tests\PaperMail.Core.Tests.csproj", "{790465B1-C3AB-45E9-AC03-65EF3A23A5C4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F75D0396-45ED-4E0C-B2C6-14C3FDAB5C53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F75D0396-45ED-4E0C-B2C6-14C3FDAB5C53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F75D0396-45ED-4E0C-B2C6-14C3FDAB5C53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F75D0396-45ED-4E0C-B2C6-14C3FDAB5C53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4EF739E7-19D0-4F5E-A194-7F0364AFD0F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4EF739E7-19D0-4F5E-A194-7F0364AFD0F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4EF739E7-19D0-4F5E-A194-7F0364AFD0F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4EF739E7-19D0-4F5E-A194-7F0364AFD0F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A3D7ED6-7849-4DEF-AE30-38C1872743CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A3D7ED6-7849-4DEF-AE30-38C1872743CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A3D7ED6-7849-4DEF-AE30-38C1872743CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A3D7ED6-7849-4DEF-AE30-38C1872743CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F67452F-7796-4DF0-8545-FB02274F2C32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F67452F-7796-4DF0-8545-FB02274F2C32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F67452F-7796-4DF0-8545-FB02274F2C32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F67452F-7796-4DF0-8545-FB02274F2C32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{790465B1-C3AB-45E9-AC03-65EF3A23A5C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{790465B1-C3AB-45E9-AC03-65EF3A23A5C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{790465B1-C3AB-45E9-AC03-65EF3A23A5C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{790465B1-C3AB-45E9-AC03-65EF3A23A5C4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F75D0396-45ED-4E0C-B2C6-14C3FDAB5C53} = {7D83F2D2-6959-4A2C-893B-F16709B6A082}
+		{4EF739E7-19D0-4F5E-A194-7F0364AFD0F2} = {7D83F2D2-6959-4A2C-893B-F16709B6A082}
+		{8A3D7ED6-7849-4DEF-AE30-38C1872743CF} = {7D83F2D2-6959-4A2C-893B-F16709B6A082}
+		{0F67452F-7796-4DF0-8545-FB02274F2C32} = {7D83F2D2-6959-4A2C-893B-F16709B6A082}
+		{790465B1-C3AB-45E9-AC03-65EF3A23A5C4} = {D91A7D8D-3855-401E-8935-0E51A3056551}
+	EndGlobalSection
+EndGlobal
