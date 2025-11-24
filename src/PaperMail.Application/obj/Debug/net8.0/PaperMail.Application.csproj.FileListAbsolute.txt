@@ -1,0 +1,15 @@
+/home/achingono/source/repos/papermail/src/PaperMail.Application/bin/Debug/net8.0/PaperMail.Application.deps.json
+/home/achingono/source/repos/papermail/src/PaperMail.Application/bin/Debug/net8.0/PaperMail.Application.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Application/bin/Debug/net8.0/PaperMail.Application.pdb
+/home/achingono/source/repos/papermail/src/PaperMail.Application/bin/Debug/net8.0/PaperMail.Core.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Application/bin/Debug/net8.0/PaperMail.Core.pdb
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/PaperMail.Application.csproj.AssemblyReference.cache
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/PaperMail.Application.GeneratedMSBuildEditorConfig.editorconfig
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/PaperMail.Application.AssemblyInfoInputs.cache
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/PaperMail.Application.AssemblyInfo.cs
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/PaperMail.Application.csproj.CoreCompileInputs.cache
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/PaperMai.11BCCCDE.Up2Date
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/PaperMail.Application.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/refint/PaperMail.Application.dll
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/PaperMail.Application.pdb
+/home/achingono/source/repos/papermail/src/PaperMail.Application/obj/Debug/net8.0/ref/PaperMail.Application.dll
