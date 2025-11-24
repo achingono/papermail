@@ -1,3 +1,76 @@
+## Docker Development Stack
+
+An end-to-end local stack is provided via `docker-compose.yml` including:
+
+* `mailserver`: SMTP/IMAP server (docker-mailserver) exposed on ports 25, 587, 993
+* `oidc`: Simple OIDC Provider (qlik/simple-oidc-provider) for local OAuth2 / OpenID Connect
+* `papermail-web`: The PaperMail ASP.NET Core application (built from source)
+
+### Quick Start
+
+```bash
+docker compose pull
+docker compose build papermail-web
+docker compose up -d
+docker compose ps
+```
+
+Visit the app at: <http://localhost:8080>
+OIDC discovery endpoint (for debugging): <http://localhost:8081/.well-known/openid-configuration>
+
+### Test User / Client
+
+Configured client:
+
+* Client Id: `papermail-web`
+* Client Secret: `papermail-secret`
+* Redirect URI: `http://localhost:8080/oauth/callback`
+
+Configured user:
+
+* Username (sub): `user1`
+* Email: `user1@example.test`
+* Password: `Password123!`
+
+### Adding a Mail Account
+
+Create a mailbox inside the mailserver container (example):
+
+```bash
+docker exec -ti mailserver setup email add user1@example.test Password123!
+```
+
+### Sending a Test Email
+
+From host (requires `swaks` or `telnet`):
+
+```bash
+swaks --to user1@example.test --from tester@example.test --server localhost:587 --header "Subject: Docker Test" --body "Hello from docker stack" --auth-user user1@example.test --auth-password Password123!
+```
+
+### Environment Mapping
+
+The app uses `ASPNETCORE_ENVIRONMENT=Docker` which loads `appsettings.Docker.json` providing container hostnames.
+
+### Rebuilding
+
+```bash
+docker compose build --no-cache papermail-web
+docker compose restart papermail-web
+```
+
+### Tear Down
+
+```bash
+docker compose down -v
+```
+
+### Notes
+
+* OIDC provider config is inline via environment variables; adjust scopes or clients in `docker-compose.yml`.
+* For production, replace simple-oidc-provider with a hardened identity platform and configure TLS for mailserver.
+* Current IMAP access flow still uses OAuth access token, but the local mailserver expects username/password; future iteration may introduce a credential bridging layer or switch to basic authentication for local dev.
+
 # PaperMail - Email Client for E-Ink Devices
 
 ## Project Overview

@@ -1,0 +1,85 @@
+version: "3.9"
+
+services:
+  mailserver:
+    image: docker.io/mailserver/docker-mailserver:latest
+    hostname: mail
+    container_name: mailserver
+    domainname: example.test
+    env_file: ./mailserver.env
+    ports:
+      - "25:25"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - maildata:/var/mail
+      - mailstate:/var/mail-state
+      - maillogs:/var/log/mail
+      - ./docker/mailserver/config/:/tmp/docker-mailserver/
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
+    healthcheck:
+      test: ["CMD", "bash", "-c", "nc -z localhost 25"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  oidc:
+    image: qlik/simple-oidc-provider:latest
+    container_name: oidc
+    environment:
+      - ISSUER=http://oidc:8080
+      - PORT=8080
+      - CLIENTS=[{\"client_id\":\"papermail-web\",\"client_secret\":\"papermail-secret\",\"redirect_uris\":[\"http://localhost:8080/oauth/callback\"],\"grant_types\":[\"authorization_code\",\"refresh_token\"],\"response_types\":[\"code\"],\"scope\":\"openid profile email offline_access\"}]
+      - USERS=[{\"sub\":\"user1\",\"name\":\"Test User\",\"email\":\"user1@example.test\",\"password\":\"Password123!\"}]
+      - LOG_LEVEL=info
+    ports:
+      - "8081:8080" # External OIDC port (mapped to host 8081 to avoid clash with web app)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://oidc:8080/.well-known/openid-configuration"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  papermail-web:
+    build:
+      context: .
+      dockerfile: src/PaperMail.Web/Dockerfile
+    container_name: papermail-web
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - IMAP__HOST=mailserver
+      - IMAP__PORT=993
+      - IMAP__USESSL=true
+      - SMTP__HOST=mailserver
+      - SMTP__PORT=587
+      - SMTP__USETLS=true
+      - OAUTHSETTINGS__CLIENTID=papermail-web
+      - OAUTHSETTINGS__CLIENTSECRET=papermail-secret
+      - OAUTHSETTINGS__SCOPES=openid profile email offline_access
+      - OAUTHSETTINGS__REDIRECTURI=http://localhost:8080/oauth/callback
+      - OAUTHSETTINGS__AUTHORIZATIONENDPOINT=http://oidc:8080/authorize
+      - OAUTHSETTINGS__TOKENENDPOINT=http://oidc:8080/token
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mailserver
+      - oidc
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://papermail-web:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  maildata:
+  mailstate:
+  maillogs:
+
+networks:
+  default:
+    name: papermail-net

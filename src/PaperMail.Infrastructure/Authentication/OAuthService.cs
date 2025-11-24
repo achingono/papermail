@@ -61,7 +61,8 @@ public class OAuthService : IOAuthService
         var state = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).TrimEnd('=');
 
         var scopes = string.Join(" ", _settings.Scopes);
-        var authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
+        var baseAuth = _settings.AuthorizationEndpoint.TrimEnd('?');
+        var authUrl = baseAuth + "?" +
             $"client_id={Uri.EscapeDataString(_settings.ClientId)}" +
             $"&redirect_uri={Uri.EscapeDataString(_settings.RedirectUri)}" +
             $"&response_type=code" +
@@ -92,7 +93,7 @@ public class OAuthService : IOAuthService
         };
 
         var response = await client.PostAsync(
-            "https://oauth2.googleapis.com/token",
+            _settings.TokenEndpoint,
             new FormUrlEncodedContent(requestBody),
             ct);
 
@@ -116,7 +117,7 @@ public class OAuthService : IOAuthService
         };
 
         var response = await client.PostAsync(
-            "https://oauth2.googleapis.com/token",
+            _settings.TokenEndpoint,
             new FormUrlEncodedContent(requestBody),
             ct);
 
