@@ -119,80 +119,141 @@ To provide a seamless, distraction-free email experience optimized for the calm,
 * **Secondary**: Users seeking a minimal, low-bandwidth email interface
 * **Use Cases**:
   * Reading and responding to emails on E-Ink devices
-  * Low-bandwidth environments
-  * Distraction-free email management
-  * Accessibility-focused email access
+  ## Local Development & Docker Stack
 
-## Core Principles
+  The local stack (defined in `docker-compose.yml`) now runs behind an NGINX reverse proxy with HTTPS and custom development domains. Services:
 
-### 1. E-Ink Optimized
+  | Service  | Purpose | Internal Port | Public Domain / URL |
+  |----------|---------|---------------|---------------------|
+  | `proxy`  | TLS termination, virtual host routing | 80/443 | https://papermail.local / https://oidc.papermail.local |
+  | `client` | PaperMail ASP.NET Core app | 8080 | proxied at https://papermail.local |
+  | `oidc`   | OIDC provider (qlik/simple-oidc-provider) | 8080 | proxied at https://oidc.papermail.local |
+  | `mail`   | SMTP/IMAP (docker-mailserver) | 25,465,587,993 | direct (no proxy) |
 
-* Minimal screen refreshes to prevent E-Ink ghosting
-* High contrast, grayscale-friendly design
-* Static content generation wherever possible
-* Reduced animations and transitions
+  ### Prerequisites
 
-### 2. Simplicity First
+  * .NET 8 SDK
+  * Docker / Docker Compose v2
+  * OpenSSL (for certificate generation)
+  * Host OS trust store access (to trust local root CA) 
 
-* Server-side rendering for maximum compatibility
-* Progressive enhancement approach
-* Graceful degradation for older browsers
-* Minimal JavaScript execution
+  ### 1. Hostname Resolution
+  Add entries to `/etc/hosts` (macOS/Linux):
+  ```
+  127.0.0.1 papermail.local oidc.papermail.local
+  ```
 
-### 3. Performance
-
-* Fast page loads even on slow connections
-* Efficient IMAP/SMTP protocol usage
-* Minimal client-side processing
-* Optimized asset delivery
-
-### 4. Privacy & Security
-
-* OAuth 2.0 as primary authentication method
-* Secure credential storage
-* No tracking or analytics
-* Minimal external dependencies
-
-## Key Constraints
-
-### E-Ink Display Limitations
-
-* Slow refresh rates (300–1000ms)
-* Limited color palette (typically grayscale)
-* Variable browser engine capabilities
-* Reduced JavaScript performance
-
-### Browser Engine Constraints
-
-* Older WebKit or Chromium versions
-* Limited CSS3 support
-* Reduced JavaScript API availability
-* Unpredictable feature support
-
-## Project Goals
-
-1. **Functional Email Client**: Support core email operations (read, compose, send, organize)
-2. **OAuth Integration**: Primary authentication via OAuth 2.0 for Gmail, Outlook, etc.
-3. **IMAP/SMTP Support**: Standard protocol support for email operations
-4. **Responsive Design**: Optimized layouts for various E-Ink device sizes
-5. **Offline Capability**: Minimal offline reading support where feasible
-6. **Accessibility**: WCAG 2.1 AA compliance for screen readers
-
-## Success Metrics
-
-* Page load time < 2 seconds on 3G connection
-* Time to interactive < 3 seconds
-* HTML size < 50KB per page
-* CSS bundle < 30KB
-* JavaScript bundle < 20KB
-* Support for browsers dating back to 2015
-
-## Documentation Structure
-
-* **[Technology Stack](./docs/TECH_STACK.md)**: Detailed technology choices and rationale
-* **[Features Specification](./docs/FEATURES.md)**: Complete feature list and requirements
+  ### 2. Generate & Trust Certificates
+  Run the provided script (creates a local root CA and wildcard cert):
+  ```bash
+  ./docker/scripts/generate-certificate.sh
+  ```
+  Files are written to `${HOME}/.aspnet/https`. To trust the root CA:
+  ```bash
+  # Linux (Debian/Ubuntu)
 * **[Architecture](./docs/ARCHITECTURE.md)**: System design and folder structure
 * **[Authentication](./docs/AUTHENTICATION.md)**: OAuth and security implementation
+
+  # macOS (add to login keychain & trust manually or use security CLI)
+  open ~/.aspnet/https/papermail-local-ca.crt
+  ```
+  If you cannot trust the CA, browsers will show a self‑signed certificate warning which you can bypass for development.
+
+  ### 3. Start the Stack
+  ```bash
+  docker compose pull
+  docker compose build client
+  docker compose up -d
+  docker compose ps
+  ```
+  Access the app at: `https://papermail.local`  (first load may prompt for cert trust)
+
+  OIDC discovery (debug): `https://oidc.papermail.local/.well-known/openid-configuration`
+
+  ### 4. Configured OIDC Client & Users
+  Client:
+  * Client Id: `papermail-web`
+  * Client Secret: `papermail-secret`
+  * Redirect URI: `https://papermail.local/oauth/callback`
+  * Scopes: `openid profile email offline_access`
+
+  Default OIDC users (see `USERS` env in compose):
+  | sub   | email                              | password (DEFAULT_PASSWORD) |
+  |-------|------------------------------------|-----------------------------|
+  | admin | admin@papermail.local              | P@ssw0rd                    |
+  | user  | user@papermail.local               | P@ssw0rd                    |
+
+  Change `DEFAULT_PASSWORD` when exporting an environment variable before `docker compose up` for improved safety.
+
+  ### 5. Mail Server OAuth2 Integration
+  `docker-mailserver` is configured for OAuth introspection (`ENABLE_OAUTH2=1`). The variable `OAUTH2_INTROSPECTION_URL` points to the OIDC provider. Registered OAuth accounts: `user1@papermail.local,user2@papermail.local` via `DMS_AUTH_OAUTH2_ACCOUNTS`.
+
+  ### 6. Adding / Managing Mailboxes
+  ```bash
+  docker exec -ti mail setup email add user1@papermail.local P@ssw0rd
+  docker exec -ti mail setup email list
+  ```
+
+  ### 7. Sending a Test Email
+  ```bash
+  swaks --to user1@papermail.local \
+    --from tester@papermail.local \
+    --server localhost:587 \
+    --header "Subject: Local Dev" \
+    --body "Hello from local stack" \
+    --auth-user user1@papermail.local \
+    --auth-password P@ssw0rd
+  ```
+
+  ### 8. Environment Variables Summary
+  Key variables (see compose file):
+  * `CLIENT_DOMAIN` / `OIDC_DOMAIN` – public dev hostnames
+  * `CERTIFICATE_PATH` – path for mounted TLS cert/key (defaults to `~/.aspnet/https`)
+  * `DEFAULT_PASSWORD` – password injected for OIDC test users
+  * `PROXY_HTTP_PORT` / `PROXY_HTTPS_PORT` – override mapped ports if needed
+
+  ### 9. Rebuild & Restart
+  ```bash
+  docker compose build --no-cache client
+  docker compose restart client
+  ```
+
+  ### 10. Tear Down
+  ```bash
+  docker compose down -v
+  ```
+
+  ### 11. Playwright E2E Tests (HTTPS)
+  Install browsers after first build:
+  ```bash
+  dotnet build
+  bash test/PaperMail.EndToEnd.Tests/bin/Debug/net8.0/playwright.sh install chromium
+  ```
+  Run tests (use HTTPS base URL):
+  ```bash
+  PAPERMAIL_BASE_URL=https://papermail.local dotnet test test/PaperMail.EndToEnd.Tests
+  ```
+  If you encounter certificate errors in Playwright, either trust the CA or add a context option to ignore HTTPS errors (temporary):
+  ```csharp
+  await playwright.Chromium.LaunchAsync(new() { Headless = true });
+  // context = await browser.NewContextAsync(new() { IgnoreHTTPSErrors = true });
+  ```
+
+  ### 12. Data Protection Note
+  `Microsoft.AspNetCore.DataProtection` was **downgraded to 8.0.22** due to decryption failures with 10.0.0 in tests. If upgrading again, validate `TokenStorage` round‑trip with unit tests.
+
+  ### 13. Proxy Templates
+  Reusable nginx snippets:
+  * `docker/nginx/snippets/ssl.conf` – TLS config
+  * `docker/nginx/snippets/proxy-headers.conf` – forwarded headers
+  * `docker/nginx/snippets/healthz.conf` – `/healthz` endpoint
+
+  Virtual host templates:
+  * `docker/nginx/templates/default.conf.template` – PaperMail app
+  * `docker/nginx/templates/oidc.conf.template` – OIDC provider
+  * `docker/nginx/templates/redirect.conf.template` – HTTP→HTTPS redirect
+
+  For deeper details see `docs/LOCAL_DEVELOPMENT.md` (added in this update).
 * **[UI/UX Guidelines](./docs/UI_GUIDELINES.md)**: E-Ink specific design patterns
 * **[API Reference](./docs/API.md)**: Internal API documentation (future)
 * **[Deployment](./docs/DEPLOYMENT.md)**: Hosting and deployment guide (future)

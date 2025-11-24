@@ -1,0 +1,20 @@
+# OIDC Provider - auth.famorize.local
+server {
+  listen ${HTTPS_PORT} ssl;
+  http2 on;
+  server_name ${OIDC_DOMAIN};
+
+  # SSL configuration
+  include /etc/nginx/snippets/ssl.conf;
+
+  # Health check endpoint
+  include /etc/nginx/snippets/healthz.conf;
+
+  location / {
+    proxy_pass http://${OIDC_HOST}:${OIDC_PORT};
+    include /etc/nginx/snippets/proxy-headers.conf;
+    proxy_set_header X-Forwarded-Port ${SOURCE_PORT};
+    gzip on;
+    gzip_types text/plain application/json;
+  }
+}

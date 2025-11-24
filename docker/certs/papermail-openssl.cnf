@@ -1,0 +1,34 @@
+[ req ]
+default_bits       = 4096
+prompt             = no
+default_md         = sha256
+distinguished_name = dn
+req_extensions     = req_ext
+
+[ dn ]
+C  = US
+ST = Local
+L  = Local
+O  = papermail
+OU = Dev
+CN = papermail.local
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = papermail.local
+DNS.2 = *.papermail.local
+
+[ v3_ca ]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+
+[ v3_server ]
+authorityKeyIdentifier=keyid,issuer
+basicConstraints = CA:false
+extendedKeyUsage = serverAuth
+keyUsage = critical, digitalSignature, keyEncipherment
+subjectAltName = @alt_names
