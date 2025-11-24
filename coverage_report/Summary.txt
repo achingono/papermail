@@ -1,0 +1,47 @@
+Summary
+  Generated on: 11/24/2025 - 12:55:24 PM
+  Coverage date: 11/24/2025 - 12:54:50 PM - 11/24/2025 - 12:54:54 PM
+  Parser: MultiReport (3x Cobertura)
+  Assemblies: 3
+  Classes: 21
+  Files: 18
+  Line coverage: 94.9%
+  Covered lines: 413
+  Uncovered lines: 22
+  Coverable lines: 435
+  Total lines: 814
+  Branch coverage: 81.2% (104 of 128)
+  Covered branches: 104
+  Total branches: 128
+  Method coverage: 89.2% (91 of 102)
+  Full method coverage: 87.2% (89 of 102)
+  Covered methods: 91
+  Fully covered methods: 89
+  Total methods: 102
+
+PaperMail.Application                                           100%
+  PaperMail.Application.DTOs.AttachmentDto                      100%
+  PaperMail.Application.DTOs.ComposeEmailRequest                100%
+  PaperMail.Application.DTOs.EmailDetailDto                     100%
+  PaperMail.Application.DTOs.EmailListItemDto                   100%
+  PaperMail.Application.Mappers.EmailMapper                     100%
+  PaperMail.Application.Services.EmailService                   100%
+  PaperMail.Application.Validators.ComposeValidator             100%
+  PaperMail.Application.Validators.ValidationResult             100%
+
+PaperMail.Core                                                 90.6%
+  PaperMail.Core.Entities.Attachment                            100%
+  PaperMail.Core.Entities.Email                                97.1%
+  PaperMail.Core.Entities.EmailAddress                         72.2%
+
+PaperMail.Infrastructure                                       92.9%
+  PaperMail.Infrastructure.Authentication.OAuthService          100%
+  PaperMail.Infrastructure.Authentication.OAuthTokenResponse     80%
+  PaperMail.Infrastructure.Authentication.PkceHelper            100%
+  PaperMail.Infrastructure.Authentication.TokenStorage          100%
+  PaperMail.Infrastructure.Configuration.ImapSettings           100%
+  PaperMail.Infrastructure.Configuration.OAuthSettings          100%
+  PaperMail.Infrastructure.Configuration.SmtpSettings           100%
+  PaperMail.Infrastructure.Email.ImapClientFactory                0%
+  PaperMail.Infrastructure.Email.ImapEmailRepository           68.4%
+  PaperMail.Infrastructure.Email.MailKitWrapper                88.3%

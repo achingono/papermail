@@ -13,8 +13,29 @@ public interface IMailKitWrapper
     Task<IEnumerable<EmailEntity>> FetchEmailsAsync(ImapSettings settings, string accessToken, int skip, int take, CancellationToken ct = default);
 }
 
+public interface IImapClientFactory
+{
+    IImapClient CreateClient();
+}
+
+public class ImapClientFactory : IImapClientFactory
+{
+    public IImapClient CreateClient() => new ImapClient();
+}
+
 public sealed class MailKitWrapper : IMailKitWrapper
 {
+    private readonly IImapClientFactory _clientFactory;
+
+    public MailKitWrapper() : this(new ImapClientFactory())
+    {
+    }
+
+    public MailKitWrapper(IImapClientFactory clientFactory)
+    {
+        _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
+    }
+
     public async Task<IEnumerable<EmailEntity>> FetchEmailsAsync(
         ImapSettings settings,
         string accessToken,
@@ -22,7 +43,16 @@ public sealed class MailKitWrapper : IMailKitWrapper
         int take,
         CancellationToken ct = default)
     {
-        using var client = new ImapClient();
+        if (settings == null)
+            throw new ArgumentNullException(nameof(settings));
+        if (string.IsNullOrWhiteSpace(accessToken))
+            throw new ArgumentException("Access token is required", nameof(accessToken));
+        if (skip < 0)
+            throw new ArgumentOutOfRangeException(nameof(skip), "Skip must be non-negative");
+        if (take <= 0)
+            throw new ArgumentOutOfRangeException(nameof(take), "Take must be greater than zero");
+
+        using var client = _clientFactory.CreateClient();
         await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
         
         var oauth2 = new SaslMechanismOAuth2(accessToken, accessToken);
@@ -44,12 +74,29 @@ public sealed class MailKitWrapper : IMailKitWrapper
         return emails;
     }
 
-    private static EmailEntity MapToEmail(MimeMessage message)
+    public static EmailEntity MapToEmail(MimeMessage message)
     {
-        var from = EmailAddress.Create(message.From.Mailboxes.First().Address);
-        var to = message.To.Mailboxes.Select(m => EmailAddress.Create(m.Address));
+        if (message == null)
+            throw new ArgumentNullException(nameof(message));
+
+        var fromMailbox = message.From.Mailboxes.FirstOrDefault();
+        if (fromMailbox == null)
+            throw new InvalidOperationException("Email must have a sender");
+
+        var from = EmailAddress.Create(fromMailbox.Address);
+        var to = message.To.Mailboxes.Select(m => EmailAddress.Create(m.Address)).ToList();
+        
+        if (!to.Any())
+        {
+            // If no To recipients, create a placeholder
+            to.Add(EmailAddress.Create("undisclosed-recipients@example.com"));
+        }
+
         var attachments = message.Attachments.OfType<MimePart>()
-            .Select(a => new Attachment(a.FileName ?? "unknown", a.Content?.Stream.Length ?? 0, a.ContentType.MimeType))
+            .Select(a => new Attachment(
+                a.FileName ?? "unknown", 
+                a.Content?.Stream.Length ?? 0, 
+                a.ContentType.MimeType))
             .ToList();
 
         return EmailEntity.Create(
