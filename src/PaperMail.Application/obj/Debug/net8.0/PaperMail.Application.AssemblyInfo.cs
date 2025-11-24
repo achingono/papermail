@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PaperMail.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fabe1f9d7a8055e3fd620ca9ccdf17dbaf4dca49")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6ce2ebb07dff8a0c3ba729ec39de01777edab4ef")]
 [assembly: System.Reflection.AssemblyProductAttribute("PaperMail.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PaperMail.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

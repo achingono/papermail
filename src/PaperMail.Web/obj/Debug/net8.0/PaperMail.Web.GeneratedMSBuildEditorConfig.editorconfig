@@ -18,8 +18,20 @@ build_property.GenerateRazorMetadataSourceChecksumAttributes =
 build_property.MSBuildProjectDirectory = /home/achingono/source/repos/papermail/src/PaperMail.Web
 build_property._RazorSourceGeneratorDebug = 
 
+[/home/achingono/source/repos/papermail/src/PaperMail.Web/Pages/Compose.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ29tcG9zZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/achingono/source/repos/papermail/src/PaperMail.Web/Pages/EmailDetail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRW1haWxEZXRhaWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/achingono/source/repos/papermail/src/PaperMail.Web/Pages/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRXJyb3IuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/achingono/source/repos/papermail/src/PaperMail.Web/Pages/Inbox.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSW5ib3guY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [/home/achingono/source/repos/papermail/src/PaperMail.Web/Pages/Index.cshtml]

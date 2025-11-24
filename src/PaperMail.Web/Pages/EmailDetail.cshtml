@@ -1,0 +1,76 @@
+@page "{id:guid}"
+@model PaperMail.Web.Pages.EmailDetailModel
+@{
+    ViewData["Title"] = Model.Email?.Subject ?? "Email";
+}
+
+@if (Model.Email == null)
+{
+    <div class="container">
+        <p class="error-message">Email not found</p>
+        <a href="/inbox" class="btn btn-secondary">Back to Inbox</a>
+    </div>
+}
+else
+{
+    <div class="container">
+        <header class="email-header">
+            <nav class="breadcrumb">
+                <a href="/inbox">← Back to Inbox</a>
+            </nav>
+            <h1 class="email-subject">@Model.Email.Subject</h1>
+            <div class="email-meta">
+                <div class="email-from">
+                    <strong>From:</strong> @Model.Email.From
+                </div>
+                <div class="email-to">
+                    <strong>To:</strong> @string.Join(", ", Model.Email.To)
+                </div>
+                <time class="email-date" datetime="@Model.Email.ReceivedAt.ToString("o")">
+                    @Model.Email.ReceivedAt.ToString("MMMM dd, yyyy HH:mm")
+                </time>
+            </div>
+        </header>
+
+        @if (Model.Email.Attachments.Any())
+        {
+            <section class="attachments">
+                <h2>Attachments (@Model.Email.Attachments.Count)</h2>
+                <ul class="attachment-list">
+                    @foreach (var attachment in Model.Email.Attachments)
+                    {
+                        <li class="attachment-item">
+                            <span class="attachment-icon">📎</span>
+                            <span class="attachment-name">@attachment.FileName</span>
+                            <span class="attachment-size">(@(attachment.SizeBytes / 1024) KB)</span>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+
+        <article class="email-body">
+            @if (!string.IsNullOrEmpty(Model.Email.BodyHtml))
+            {
+                @* Sanitize HTML in production *@
+                <div class="email-body-html">
+                    @Html.Raw(Model.Email.BodyHtml)
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(Model.Email.BodyPlain))
+            {
+                <pre class="email-body-plain">@Model.Email.BodyPlain</pre>
+            }
+            else
+            {
+                <p class="empty-body">(No content)</p>
+            }
+        </article>
+
+        <footer class="email-actions">
+            <a href="/compose?reply=@Model.Email.Id" class="btn btn-primary">Reply</a>
+            <a href="/compose?forward=@Model.Email.Id" class="btn btn-secondary">Forward</a>
+            <a href="/inbox" class="btn btn-secondary">Back to Inbox</a>
+        </footer>
+    </div>
+}
