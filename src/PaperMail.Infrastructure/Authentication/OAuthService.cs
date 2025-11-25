@@ -58,7 +58,15 @@ public class OAuthService : IOAuthService
     {
         var codeVerifier = PkceHelper.GenerateCodeVerifier();
         var codeChallenge = PkceHelper.GenerateCodeChallenge(codeVerifier);
-        var state = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).TrimEnd('=');
+        // Generate a URL-safe state value (Base64Url) to avoid '+' becoming space on callback
+        Span<byte> guidBytes = stackalloc byte[16];
+        Guid.NewGuid().TryWriteBytes(guidBytes);
+        var base64 = Convert.ToBase64String(guidBytes);
+        // Base64Url encode: replace '+' and '/' and trim padding '='
+        var state = base64.Replace("+", "-").Replace("/", "_").TrimEnd('=');
+
+        // Debug scopes
+        Console.WriteLine($"OAuth scopes configured: {string.Join(",", _settings.Scopes)}");
 
         var scopes = string.Join(" ", _settings.Scopes);
         var baseAuth = _settings.AuthorizationEndpoint.TrimEnd('?');
@@ -69,7 +77,7 @@ public class OAuthService : IOAuthService
             $"&scope={Uri.EscapeDataString(scopes)}" +
             $"&code_challenge={codeChallenge}" +
             $"&code_challenge_method=S256" +
-            $"&state={state}";
+            $"&state={Uri.EscapeDataString(state)}"; // Ensure state is URL encoded
 
         return (authUrl, codeVerifier, state);
     }
@@ -97,8 +105,11 @@ public class OAuthService : IOAuthService
 
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadAsStringAsync(ct);
-        return JsonSerializer.Deserialize<OAuthTokenResponse>(json)
+        Console.WriteLine($"Token response JSON: {json}");
+        var tokenResponse = JsonSerializer.Deserialize<OAuthTokenResponse>(json)
             ?? throw new InvalidOperationException("Failed to deserialize token response");
+        Console.WriteLine($"Deserialized token - AccessToken: {!string.IsNullOrEmpty(tokenResponse.AccessToken)}, RefreshToken: {!string.IsNullOrEmpty(tokenResponse.RefreshToken)}");
+        return tokenResponse;
     }
 
     public async Task<OAuthTokenResponse> RefreshAccessTokenAsync(
@@ -138,6 +149,11 @@ public class OAuthService : IOAuthService
         OAuthTokenResponse tokens, 
         CancellationToken ct = default)
     {
+        Console.WriteLine($"StoreUserTokensAsync called for {userId}");
+        Console.WriteLine($"  AccessToken: {!string.IsNullOrEmpty(tokens.AccessToken)}");
+        Console.WriteLine($"  RefreshToken: {!string.IsNullOrEmpty(tokens.RefreshToken)}");
+        Console.WriteLine($"  IdToken: {!string.IsNullOrEmpty(tokens.IdToken)}");
+        
         // Store access token with expiration
         await _tokenStorage.StoreAccessTokenAsync(userId, tokens.AccessToken, tokens.ExpiresIn, ct);
         
@@ -145,6 +161,11 @@ public class OAuthService : IOAuthService
         if (!string.IsNullOrEmpty(tokens.RefreshToken))
         {
             await _tokenStorage.StoreTokenAsync(userId, tokens.RefreshToken, ct);
+            Console.WriteLine($"  Stored refresh token for {userId}");
+        }
+        else
+        {
+            Console.WriteLine($"  WARNING: No refresh token to store for {userId}");
         }
     }
 
@@ -158,6 +179,7 @@ public class OAuthTokenResponse
 {
     public string AccessToken { get; set; } = string.Empty;
     public string? RefreshToken { get; set; }
+    public string? IdToken { get; set; }
     public int ExpiresIn { get; set; }
     public string TokenType { get; set; } = "Bearer";
     public string? Scope { get; set; }
@@ -168,6 +190,9 @@ public class OAuthTokenResponse
 
     [System.Text.Json.Serialization.JsonPropertyName("refresh_token")]
     public string? RefreshTokenJson { set => RefreshToken = value; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("id_token")]
+    public string? IdTokenJson { set => IdToken = value; }
 
     [System.Text.Json.Serialization.JsonPropertyName("expires_in")]
     public int ExpiresInJson { set => ExpiresIn = value; }

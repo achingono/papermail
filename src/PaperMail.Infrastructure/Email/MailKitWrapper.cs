@@ -64,9 +64,36 @@ public sealed class MailKitWrapper : IMailKitWrapper
         
         await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
 
-        // Use XOAUTH2 with username and access token
-        var oauth2 = new MailKit.Security.SaslMechanismOAuth2(settings.Username, accessToken);
-        await client.AuthenticateAsync(oauth2, ct);
+        var authenticated = false;
+        var mechanisms = client.AuthenticationMechanisms;
+
+        // Try XOAUTH2 first if server advertises support and we have a token
+        if (!string.IsNullOrWhiteSpace(accessToken) && mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var oauth2 = new SaslMechanismOAuth2(settings.Username, accessToken);
+                await client.AuthenticateAsync(oauth2, ct);
+                authenticated = true;
+            }
+            catch (AuthenticationException)
+            {
+                // swallow and attempt fallback below
+            }
+        }
+
+        // Fallback to PLAIN/LOGIN if password configured
+        if (!authenticated && !string.IsNullOrWhiteSpace(settings.Password) &&
+            (mechanisms.Contains("PLAIN", StringComparer.OrdinalIgnoreCase) || mechanisms.Contains("LOGIN", StringComparer.OrdinalIgnoreCase)))
+        {
+            await client.AuthenticateAsync(settings.Username, settings.Password, ct);
+            authenticated = true;
+        }
+
+        if (!authenticated)
+        {
+            throw new AuthenticationException("Failed to authenticate via XOAUTH2 and no valid fallback available.");
+        }
 
         var inbox = client.Inbox;
         await inbox.OpenAsync(FolderAccess.ReadOnly, ct);
@@ -109,8 +136,33 @@ public sealed class MailKitWrapper : IMailKitWrapper
         
         await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
 
-        var oauth2 = new MailKit.Security.SaslMechanismOAuth2(settings.Username, accessToken);
-        await client.AuthenticateAsync(oauth2, ct);
+        var authenticated = false;
+        var mechanisms = client.AuthenticationMechanisms;
+
+        if (!string.IsNullOrWhiteSpace(accessToken) && mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var oauth2 = new SaslMechanismOAuth2(settings.Username, accessToken);
+                await client.AuthenticateAsync(oauth2, ct);
+                authenticated = true;
+            }
+            catch (AuthenticationException)
+            {
+            }
+        }
+
+        if (!authenticated && !string.IsNullOrWhiteSpace(settings.Password) &&
+            (mechanisms.Contains("PLAIN", StringComparer.OrdinalIgnoreCase) || mechanisms.Contains("LOGIN", StringComparer.OrdinalIgnoreCase)))
+        {
+            await client.AuthenticateAsync(settings.Username, settings.Password, ct);
+            authenticated = true;
+        }
+
+        if (!authenticated)
+        {
+            throw new AuthenticationException("Failed to authenticate via XOAUTH2 and no valid fallback available.");
+        }
 
         // Get or create Drafts folder
         var drafts = client.GetFolder(MailKit.SpecialFolder.Drafts);

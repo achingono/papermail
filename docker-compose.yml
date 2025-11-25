@@ -51,11 +51,14 @@ services:
       - OAUTH__SCOPES__0=openid
       - OAUTH__SCOPES__1=profile
       - OAUTH__SCOPES__2=email
+      - OAUTH__SCOPES__3=offline_access
       - OAUTH__REDIRECTURI=https://${CLIENT_DOMAIN:-papermail.local}/oauth/callback
       - OAUTH__AUTHORIZATIONENDPOINT=https://${OIDC_DOMAIN:-oidc.papermail.local}/auth
       - OAUTH__TOKENENDPOINT=http://oidc:8080/token
     volumes:
       - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.crt:/usr/local/share/ca-certificates/papermail.local.crt:ro
+      # Persist DataProtection key ring to survive container restarts
+      - clientdata:/app/keys
     depends_on:
       - mail
       - oidc
@@ -92,8 +95,9 @@ services:
       - mailstate:/var/mail-state
       - maillogs:/var/log/mail
       - ./docker/mailserver/config/:/tmp/docker-mailserver/
-      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.crt:/tmp/docker-mailserver/ssl/mail.papermail.local-cert.pem:ro
       - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.key:/tmp/docker-mailserver/ssl/mail.papermail.local-key.pem:ro
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.crt:/tmp/docker-mailserver/ssl/mail.papermail.local-cert.pem:ro
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.crt:/tmp/docker-mailserver/ssl/demoCA/cacert.pem:ro
     cap_add:
       - NET_ADMIN
       - SYS_PTRACE
@@ -104,22 +108,26 @@ services:
           - mail.papermail.local
 
   oidc:
-    image: qlik/simple-oidc-provider:latest
+    build:
+      context: .
+      dockerfile: src/PaperMail.Oidc/Dockerfile
     environment:
-      - IDP_NAME=http://oidc:8080
-      - EXTERNAL_HOST_NAME=${OIDC_DOMAIN:-oidc.papermail.local}
       - PORT=8080
-      - REDIRECTS=https://${CLIENT_DOMAIN:-papermail.local}/oauth/callback
-      - POST_LOGOUT_REDIRECTS=https://${CLIENT_DOMAIN:-papermail.local}/auth/logout/callback
-      - CONFIG_FILE=/mnt/config/config.json
-      - USERS_FILE=/mnt/config/users.json
-    volumes:
-      - ./docker/oidc/:/mnt/config/:ro
+      - ISSUER=http://oidc:8080
+      - EXTERNAL_HOST_NAME=${OIDC_DOMAIN:-oidc.papermail.local}
+      - CLIENT_ID=${OIDC_CLIENT_ID:-a92e2069-b509-450b-a9e8-d73cead8735a}
+      - CLIENT_SECRET=${OIDC_CLIENT_SECRET:-YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh}
+      - REDIRECT_URIS=https://${CLIENT_DOMAIN:-papermail.local}/oauth/callback
+      - POST_LOGOUT_REDIRECT_URIS=https://${CLIENT_DOMAIN:-papermail.local}/auth/logout/callback
+      - COOKIE_KEYS=${OIDC_COOKIE_KEYS:-59761AB67FB5BA23BDD917B2F2E409394A848F50FA9CEB08860C73495339266E}
+      # Optional: Override default users by providing JSON array
+      # - USERS=[{"id":"945dc90b-02ac-43e5-a4ab-2db744dce149","email":"admin@papermail.local","email_verified":true,"name":"Administrator Account","nickname":"admin","given_name":"Administrator","family_name":"Account","password":"P@ssw0rd","groups":["Everyone","Administrators"]}]
     restart: unless-stopped
     networks:
       - papermail-net
 
 volumes:
+  clientdata:
   maildata:
   mailstate:
   maillogs:

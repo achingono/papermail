@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using PaperMail.Core.Entities;
 using PaperMail.Core.Interfaces;
 using PaperMail.Infrastructure.Configuration;
+using System.Security.Authentication;
 using EmailEntity = PaperMail.Core.Entities.Email;
 
 namespace PaperMail.Infrastructure.Email;
@@ -40,17 +41,27 @@ public sealed class ImapEmailRepository : IEmailRepository
             ?? throw new InvalidOperationException("No access token available");
 
         // Use userId from session as IMAP username
+        var password = string.IsNullOrWhiteSpace(_imapSettings.Password) ? _smtpSettings.Password : _imapSettings.Password;
         var settingsWithUser = new ImapSettings
         {
             Host = _imapSettings.Host,
             Port = _imapSettings.Port,
             UseSsl = _imapSettings.UseSsl,
-            Username = userId
+            Username = userId,
+            Password = password
         };
 
         var skip = page * pageSize;
-        var emails = await _mailKit.FetchEmailsAsync(settingsWithUser, accessToken, skip, pageSize, ct);
-        return emails.ToList();
+        try
+        {
+            var emails = await _mailKit.FetchEmailsAsync(settingsWithUser, accessToken, skip, pageSize, ct);
+            return emails.ToList();
+        }
+        catch (AuthenticationException)
+        {
+            // Authentication failed even after fallback; surface empty inbox rather than hard failure.
+            return Array.Empty<EmailEntity>();
+        }
     }
 
     public Task MarkReadAsync(Guid id, CancellationToken ct = default)
@@ -63,12 +74,14 @@ public sealed class ImapEmailRepository : IEmailRepository
         var accessToken = await _tokenStorage.GetAccessTokenAsync(userId, ct)
             ?? throw new InvalidOperationException("No access token available");
 
+        var password = string.IsNullOrWhiteSpace(_imapSettings.Password) ? _smtpSettings.Password : _imapSettings.Password;
         var settingsWithUser = new ImapSettings
         {
             Host = _imapSettings.Host,
             Port = _imapSettings.Port,
             UseSsl = _imapSettings.UseSsl,
-            Username = userId
+            Username = userId,
+            Password = password
         };
 
         await _mailKit.SaveDraftAsync(settingsWithUser, accessToken, draft, ct);

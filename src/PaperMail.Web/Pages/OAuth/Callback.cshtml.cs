@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PaperMail.Infrastructure.Authentication;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace PaperMail.Web.Pages.OAuth;
 
@@ -31,6 +32,7 @@ public class CallbackModel : PageModel
         if (string.IsNullOrEmpty(code))
         {
             var (authUrl, codeVerifier, stateValue) = _oauthService.GetAuthorizationUrl();
+            _logger.LogInformation("Auth URL generated: {AuthUrl}", authUrl);
             
             // Store PKCE parameters in session
             HttpContext.Session.SetString("CodeVerifier", codeVerifier);
@@ -60,10 +62,25 @@ public class CallbackModel : PageModel
 
             var tokens = await _oauthService.ExchangeCodeForTokensAsync(code, codeVerifier);
             
-            // Get user email from token (decode JWT id_token to get email claim)
-            // For simplicity, we'll use the username from the OIDC provider
-            // In production, decode the id_token JWT to get the email claim
-            var userId = "admin@papermail.local"; // TODO: Extract from id_token JWT
+            // Extract email from id_token JWT
+            var handler = new JwtSecurityTokenHandler();
+            var idToken = handler.ReadJwtToken(tokens.IdToken);
+            
+            _logger.LogInformation("ID Token claims: {Claims}", 
+                string.Join(", ", idToken.Claims.Select(c => $"{c.Type}={c.Value}")));
+            
+            var emailClaim = idToken.Claims.FirstOrDefault(c => c.Type == "email");
+            
+            if (emailClaim == null)
+            {
+                _logger.LogWarning("Email claim not found. Available claims: {Claims}",
+                    string.Join(", ", idToken.Claims.Select(c => c.Type)));
+                ErrorMessage = "Email claim not found in token. Please contact support.";
+                return Page();
+            }
+            
+            var userId = emailClaim.Value;
+            _logger.LogInformation("Extracted user email from id_token: {Email}", userId);
             
             // Store tokens
             await _oauthService.StoreUserTokensAsync(userId, tokens);

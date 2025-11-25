@@ -57,7 +57,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirection removed: TLS terminated at reverse proxy (nginx). Avoid port detection warnings.
 app.UseStaticFiles();
 
 app.UseRouting();

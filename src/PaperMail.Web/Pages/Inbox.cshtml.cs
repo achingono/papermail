@@ -20,6 +20,7 @@ public class InboxModel : PageModel
     public List<EmailListItemDto> Emails { get; private set; } = new();
     public int CurrentPage { get; private set; }
     public int TotalPages { get; private set; }
+    public string? ErrorMessage { get; private set; }
 
     public async Task OnGetAsync(int page = 0)
     {
@@ -42,6 +43,7 @@ public class InboxModel : PageModel
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading inbox");
+            ErrorMessage = ex.Message;
             Emails = new List<EmailListItemDto>();
         }
     }
