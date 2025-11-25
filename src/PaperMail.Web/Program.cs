@@ -19,6 +19,7 @@ builder.Services.Configure<OAuthSettings>(builder.Configuration.GetSection("OAut
 // Register infrastructure services
 builder.Services.AddSingleton<ITokenStorage, TokenStorage>();
 builder.Services.AddSingleton<IMailKitWrapper, MailKitWrapper>();
+builder.Services.AddSingleton<ISmtpWrapper, SmtpWrapper>();
 builder.Services.AddScoped<IEmailRepository, ImapEmailRepository>();
 
 // Register OAuth service

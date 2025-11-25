@@ -32,6 +32,13 @@ public class ComposeModel : PageModel
     {
         try
         {
+            // Get userId from session
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToPage("/OAuth/Login");
+            }
+
             // Parse comma-separated recipients from form input
             if (!string.IsNullOrWhiteSpace(EmailRequest.To?.FirstOrDefault()))
             {
@@ -47,23 +54,19 @@ public class ComposeModel : PageModel
                 return Page();
             }
 
-            // TODO: Get actual user email from authentication
-            var fromAddress = "user@example.com";
-
             if (action == "draft")
             {
                 // Save draft
-                var draftId = await _emailService.SaveDraftAsync(EmailRequest, fromAddress);
+                var draftId = await _emailService.SaveDraftAsync(EmailRequest, userId);
                 _logger.LogInformation("Draft saved: {DraftId}", draftId);
                 return RedirectToPage("/Inbox");
             }
             else if (action == "send")
             {
-                // TODO: Implement send via SMTP
-                _logger.LogWarning("Send not yet implemented");
-                ErrorMessage = "Send functionality not yet implemented. Draft saved instead.";
-                var draftId = await _emailService.SaveDraftAsync(EmailRequest, fromAddress);
-                return Page();
+                // Send email via SMTP
+                var emailId = await _emailService.SendEmailAsync(EmailRequest, userId);
+                _logger.LogInformation("Email sent: {EmailId}", emailId);
+                return RedirectToPage("/Inbox");
             }
 
             return RedirectToPage("/Inbox");

@@ -26,5 +26,10 @@ public interface IEmailService
     /// <summary>
     /// Saves a draft email.
     /// </summary>
-    Task<Guid> SaveDraftAsync(ComposeEmailRequest request, string fromAddress);
+    Task<Guid> SaveDraftAsync(ComposeEmailRequest request, string userId);
+
+    /// <summary>
+    /// Sends an email via SMTP.
+    /// </summary>
+    Task<Guid> SendEmailAsync(ComposeEmailRequest request, string userId);
 }

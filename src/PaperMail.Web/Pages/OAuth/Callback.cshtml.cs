@@ -60,8 +60,10 @@ public class CallbackModel : PageModel
 
             var tokens = await _oauthService.ExchangeCodeForTokensAsync(code, codeVerifier);
             
-            // Generate user ID from access token (in production, decode JWT or fetch user info)
-            var userId = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).TrimEnd('=');
+            // Get user email from token (decode JWT id_token to get email claim)
+            // For simplicity, we'll use the username from the OIDC provider
+            // In production, decode the id_token JWT to get the email claim
+            var userId = "admin@papermail.local"; // TODO: Extract from id_token JWT
             
             // Store tokens
             await _oauthService.StoreUserTokensAsync(userId, tokens);

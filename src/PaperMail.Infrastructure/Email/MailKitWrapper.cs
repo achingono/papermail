@@ -11,6 +11,7 @@ namespace PaperMail.Infrastructure.Email;
 public interface IMailKitWrapper
 {
     Task<IEnumerable<EmailEntity>> FetchEmailsAsync(ImapSettings settings, string accessToken, int skip, int take, CancellationToken ct = default);
+    Task SaveDraftAsync(ImapSettings settings, string accessToken, EmailEntity draft, CancellationToken ct = default);
 }
 
 public interface IImapClientFactory
@@ -75,6 +76,66 @@ public sealed class MailKitWrapper : IMailKitWrapper
 
         await client.DisconnectAsync(true, ct);
         return emails;
+    }
+
+    public async Task SaveDraftAsync(
+        ImapSettings settings,
+        string accessToken,
+        EmailEntity draft,
+        CancellationToken ct = default)
+    {
+        if (settings == null)
+            throw new ArgumentNullException(nameof(settings));
+        if (string.IsNullOrWhiteSpace(accessToken))
+            throw new ArgumentException("Access token is required", nameof(accessToken));
+        if (string.IsNullOrWhiteSpace(settings.Username))
+            throw new ArgumentException("IMAP username is required", nameof(settings.Username));
+        if (draft == null)
+            throw new ArgumentNullException(nameof(draft));
+
+        using var client = _clientFactory.CreateClient();
+        await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
+
+        var oauth2 = new MailKit.Security.SaslMechanismOAuth2(settings.Username, accessToken);
+        await client.AuthenticateAsync(oauth2, ct);
+
+        // Get or create Drafts folder
+        var drafts = client.GetFolder(MailKit.SpecialFolder.Drafts);
+        await drafts.OpenAsync(FolderAccess.ReadWrite, ct);
+
+        // Create MimeMessage from EmailEntity
+        var message = CreateMimeMessage(draft);
+
+        // Append to Drafts folder
+        await drafts.AppendAsync(message, MessageFlags.Draft, ct);
+
+        await client.DisconnectAsync(true, ct);
+    }
+
+    private static MimeMessage CreateMimeMessage(EmailEntity email)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(string.Empty, email.From.Value));
+        
+        foreach (var recipient in email.To)
+        {
+            message.To.Add(new MailboxAddress(string.Empty, recipient.Value));
+        }
+
+        message.Subject = email.Subject;
+
+        var builder = new BodyBuilder();
+        if (!string.IsNullOrEmpty(email.BodyHtml))
+        {
+            builder.HtmlBody = email.BodyHtml;
+        }
+        if (!string.IsNullOrEmpty(email.BodyPlain))
+        {
+            builder.TextBody = email.BodyPlain;
+        }
+
+        message.Body = builder.ToMessageBody();
+        return message;
     }
 
     public static EmailEntity MapToEmail(MimeMessage message)

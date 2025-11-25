@@ -42,16 +42,29 @@ public class EmailService : IEmailService
         await _emailRepository.MarkReadAsync(emailId);
     }
 
-    public async Task<Guid> SaveDraftAsync(ComposeEmailRequest request, string fromAddress)
+    public async Task<Guid> SaveDraftAsync(ComposeEmailRequest request, string userId)
     {
         if (request == null)
             throw new ArgumentNullException(nameof(request));
 
-        if (string.IsNullOrWhiteSpace(fromAddress))
-            throw new ArgumentException("From address is required", nameof(fromAddress));
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID is required", nameof(userId));
 
-        var email = EmailMapper.ToEntity(request, fromAddress);
-        await _emailRepository.SaveDraftAsync(email);
+        var email = EmailMapper.ToEntity(request, userId);
+        await _emailRepository.SaveDraftAsync(email, userId);
+        return email.Id;
+    }
+
+    public async Task<Guid> SendEmailAsync(ComposeEmailRequest request, string userId)
+    {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID is required", nameof(userId));
+
+        var email = EmailMapper.ToEntity(request, userId);
+        await _emailRepository.SendEmailAsync(email, userId);
         return email.Id;
     }
 }
