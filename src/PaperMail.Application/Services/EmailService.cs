@@ -27,8 +27,7 @@ public class EmailService : IEmailService
         if (pageSize <= 0 || pageSize > 200)
             throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
 
-        // Note: userId not used in repository yet (future: multi-tenant support)
-        var emails = await _emailRepository.GetInboxAsync(page, pageSize);
+        var emails = await _emailRepository.GetInboxAsync(userId, page, pageSize);
         return emails.Select(EmailMapper.ToListItemDto).ToList();
     }
 

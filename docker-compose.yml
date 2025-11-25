@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   proxy:
     image: nginx:stable-alpine
@@ -38,19 +36,21 @@ services:
       context: .
       dockerfile: src/PaperMail.Web/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_ENVIRONMENT=Development
       - IMAP__HOST=mail
       - IMAP__PORT=993
       - IMAP__USESSL=true
       - SMTP__HOST=mail
       - SMTP__PORT=587
       - SMTP__USETLS=true
-      - OAUTHSETTINGS__CLIENTID=papermail-web
-      - OAUTHSETTINGS__CLIENTSECRET=papermail-secret
-      - OAUTHSETTINGS__SCOPES=openid profile email offline_access
-      - OAUTHSETTINGS__REDIRECTURI=https://${CLIENT_DOMAIN:-papermail.local}/oauth/callback
-      - OAUTHSETTINGS__AUTHORIZATIONENDPOINT=https://${OIDC_DOMAIN:-oidc.papermail.local}/auth
-      - OAUTHSETTINGS__TOKENENDPOINT=https://${OIDC_DOMAIN:-oidc.papermail.local}/token
+      - OAUTH__CLIENTID=a92e2069-b509-450b-a9e8-d73cead8735a
+      - OAUTH__CLIENTSECRET=YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh
+      - OAUTH__SCOPES__0=openid
+      - OAUTH__SCOPES__1=profile
+      - OAUTH__SCOPES__2=email
+      - OAUTH__REDIRECTURI=https://${CLIENT_DOMAIN:-papermail.local}/oauth/callback
+      - OAUTH__AUTHORIZATIONENDPOINT=https://${OIDC_DOMAIN:-oidc.papermail.local}/auth
+      - OAUTH__TOKENENDPOINT=http://oidc:8080/token
     depends_on:
       - mail
       - oidc
@@ -89,11 +89,15 @@ services:
   oidc:
     image: qlik/simple-oidc-provider:latest
     environment:
-      - ISSUER=http://oidc:8080
+      - IDP_NAME=http://oidc:8080
+      - EXTERNAL_HOST_NAME=${OIDC_DOMAIN:-oidc.papermail.local}
       - PORT=8080
-      - CLIENTS=[{\"client_id\":\"papermail-web\",\"client_secret\":\"papermail-secret\",\"redirect_uris\":[\"https://${CLIENT_DOMAIN:-papermail.local}/oauth/callback\"],\"grant_types\":[\"authorization_code\",\"refresh_token\"],\"response_types\":[\"code\"],\"scope\":\"openid profile email offline_access\"}]
-      - USERS=[{\"sub\":\"admin\",\"name\":\"Administrator Account\",\"email\":\"admin@${CLIENT_DOMAIN:-papermail.local}\",\"password\":\"${DEFAULT_PASSWORD:-P@ssw0rd}\"},{\"sub\":\"user\",\"name\":\"User Account\",\"email\":\"user@${CLIENT_DOMAIN:-papermail.local}\",\"password\":\"${DEFAULT_PASSWORD:-P@ssw0rd}\"}]
-      - LOG_LEVEL=info
+      - REDIRECTS=https://${CLIENT_DOMAIN:-papermail.local}/oauth/callback
+      - POST_LOGOUT_REDIRECTS=https://${CLIENT_DOMAIN:-papermail.local}/auth/logout/callback
+      - CONFIG_FILE=/mnt/config/config.json
+      - USERS_FILE=/mnt/config/users.json
+    volumes:
+      - ./docker/oidc/:/mnt/config/:ro
     restart: unless-stopped
     networks:
       - papermail-net

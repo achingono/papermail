@@ -69,9 +69,7 @@ public class OAuthService : IOAuthService
             $"&scope={Uri.EscapeDataString(scopes)}" +
             $"&code_challenge={codeChallenge}" +
             $"&code_challenge_method=S256" +
-            $"&state={state}" +
-            $"&access_type=offline" +
-            $"&prompt=consent";
+            $"&state={state}";
 
         return (authUrl, codeVerifier, state);
     }
@@ -140,6 +138,10 @@ public class OAuthService : IOAuthService
         OAuthTokenResponse tokens, 
         CancellationToken ct = default)
     {
+        // Store access token with expiration
+        await _tokenStorage.StoreAccessTokenAsync(userId, tokens.AccessToken, tokens.ExpiresIn, ct);
+        
+        // Store refresh token if available
         if (!string.IsNullOrEmpty(tokens.RefreshToken))
         {
             await _tokenStorage.StoreTokenAsync(userId, tokens.RefreshToken, ct);

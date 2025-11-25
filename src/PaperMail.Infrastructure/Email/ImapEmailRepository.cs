@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using PaperMail.Core.Entities;
 using PaperMail.Core.Interfaces;
 using PaperMail.Infrastructure.Configuration;
@@ -11,10 +12,10 @@ public sealed class ImapEmailRepository : IEmailRepository
     private readonly ImapSettings _settings;
     private readonly ITokenStorage _tokenStorage;
 
-    public ImapEmailRepository(IMailKitWrapper mailKit, ImapSettings settings, ITokenStorage tokenStorage)
+    public ImapEmailRepository(IMailKitWrapper mailKit, IOptions<ImapSettings> settings, ITokenStorage tokenStorage)
     {
         _mailKit = mailKit ?? throw new ArgumentNullException(nameof(mailKit));
-        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
         _tokenStorage = tokenStorage ?? throw new ArgumentNullException(nameof(tokenStorage));
     }
 
@@ -24,9 +25,9 @@ public sealed class ImapEmailRepository : IEmailRepository
         throw new NotImplementedException("Email by ID requires UID mapping implementation");
     }
 
-    public async Task<IReadOnlyCollection<EmailEntity>> GetInboxAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<IReadOnlyCollection<EmailEntity>> GetInboxAsync(string userId, int page, int pageSize, CancellationToken ct = default)
     {
-        var accessToken = await _tokenStorage.GetTokenAsync("current-user", ct) 
+        var accessToken = await _tokenStorage.GetAccessTokenAsync(userId, ct) 
             ?? throw new InvalidOperationException("No access token available");
 
         var skip = page * pageSize;

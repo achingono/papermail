@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PaperMail.Application.DTOs;
 using PaperMail.Application.Services;
+using Microsoft.AspNetCore.Http;
 
 namespace PaperMail.Web.Pages;
 
@@ -24,8 +25,13 @@ public class InboxModel : PageModel
     {
         try
         {
-            // TODO: Get actual user ID from authentication
-            var userId = "current-user";
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("No user session found, redirecting to login");
+                Response.Redirect("/oauth/login");
+                return;
+            }
             
             CurrentPage = Math.Max(0, page);
             Emails = await _emailService.GetInboxAsync(userId, CurrentPage, PageSize);
