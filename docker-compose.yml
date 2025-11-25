@@ -41,8 +41,8 @@ services:
       - IMAP__PORT=143
       - IMAP__USESSL=false
       - SMTP__HOST=mail
-      - SMTP__PORT=587
-      - SMTP__USETLS=true
+      - SMTP__PORT=25
+      - SMTP__USETLS=false
       - OAUTH__CLIENTID=a92e2069-b509-450b-a9e8-d73cead8735a
       - OAUTH__CLIENTSECRET=YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh
       - OAUTH__SCOPES__0=openid
@@ -67,11 +67,12 @@ services:
       - PERMIT_DOCKER=network
       # Disable SSL requirement for development
       - SSL_TYPE=
-      #- ENABLE_OAUTH2=1
+      # Enable OAuth2 authentication
+      - ENABLE_OAUTH2=1
       # Point to your OAuth provider's introspection endpoint
-      #- OAUTH2_INTROSPECTION_URL=https://${OIDC_DOMAIN:-oidc.papermail.local}/token/introspection
+      - OAUTH2_INTROSPECTION_URL=http://oidc:8080/token/introspection
       # Define users with OAuth. They don't need a password defined in docker-mailserver.
-      #- DMS_AUTH_OAUTH2_ACCOUNTS=admin@papermail.local,user@papermail.local
+      - DMS_AUTH_OAUTH2_ACCOUNTS=admin@papermail.local,user@papermail.local
     ports:
       - "25:25"
       - "465:465"
