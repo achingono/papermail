@@ -43,6 +43,8 @@ services:
       - SMTP__HOST=mail
       - SMTP__PORT=25
       - SMTP__USETLS=false
+      - SMTP__USERNAME=admin@papermail.local
+      - SMTP__PASSWORD=P@ssw0rd
       - OAUTH__CLIENTID=a92e2069-b509-450b-a9e8-d73cead8735a
       - OAUTH__CLIENTSECRET=YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh
       - OAUTH__SCOPES__0=openid

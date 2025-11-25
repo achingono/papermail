@@ -43,27 +43,46 @@ public sealed class SmtpWrapper : ISmtpWrapper
     {
         if (settings == null)
             throw new ArgumentNullException(nameof(settings));
-        if (string.IsNullOrWhiteSpace(accessToken))
-            throw new ArgumentException("Access token is required", nameof(accessToken));
-        if (string.IsNullOrWhiteSpace(settings.Username))
-            throw new ArgumentException("SMTP username is required", nameof(settings.Username));
         if (email == null)
             throw new ArgumentNullException(nameof(email));
+        if (string.IsNullOrWhiteSpace(settings.Username))
+            throw new ArgumentException("SMTP username is required", nameof(settings.Username));
 
         using var client = _clientFactory.CreateClient();
-        
-        // Connect to SMTP server
-        await client.ConnectAsync(settings.Host, settings.Port, 
-            settings.UseTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None, ct);
 
-        // Authenticate using XOAUTH2
-        var oauth2 = new SaslMechanismOAuth2(settings.Username, accessToken);
-        await client.AuthenticateAsync(oauth2, ct);
+        await client.ConnectAsync(
+            settings.Host,
+            settings.Port,
+            settings.UseTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None,
+            ct);
 
-        // Create and send message
+        var authenticated = false;
+
+        // Try XOAUTH2 first if we have an access token.
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            try
+            {
+                var oauth2 = new SaslMechanismOAuth2(settings.Username, accessToken);
+                await client.AuthenticateAsync(oauth2, ct);
+                authenticated = true;
+            }
+            catch (Exception ex) when (ex is NotSupportedException || ex is AuthenticationException)
+            {
+                // Fallback to plain login if XOAUTH2 unsupported.
+            }
+        }
+
+        if (!authenticated)
+        {
+            if (string.IsNullOrWhiteSpace(settings.Password))
+                throw new InvalidOperationException("SMTP fallback authentication requires a password.");
+
+            await client.AuthenticateAsync(settings.Username, settings.Password, ct);
+        }
+
         var message = CreateMimeMessage(email);
         await client.SendAsync(message, ct);
-
         await client.DisconnectAsync(true, ct);
     }
 
