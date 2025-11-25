@@ -27,11 +27,20 @@ public sealed class ImapEmailRepository : IEmailRepository
 
     public async Task<IReadOnlyCollection<EmailEntity>> GetInboxAsync(string userId, int page, int pageSize, CancellationToken ct = default)
     {
-        var accessToken = await _tokenStorage.GetAccessTokenAsync(userId, ct) 
+        var accessToken = await _tokenStorage.GetAccessTokenAsync(userId, ct)
             ?? throw new InvalidOperationException("No access token available");
 
+        // Use userId from session as IMAP username
+        var settingsWithUser = new ImapSettings
+        {
+            Host = _settings.Host,
+            Port = _settings.Port,
+            UseSsl = _settings.UseSsl,
+            Username = userId
+        };
+
         var skip = page * pageSize;
-        var emails = await _mailKit.FetchEmailsAsync(_settings, accessToken, skip, pageSize, ct);
+        var emails = await _mailKit.FetchEmailsAsync(settingsWithUser, accessToken, skip, pageSize, ct);
         return emails.ToList();
     }
 

@@ -424,3 +424,4 @@ FodyWeavers.xsd
 # Helm packaged charts
 *.tgznode_modules/
 *.log
+.playwright-mcp/

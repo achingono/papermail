@@ -38,8 +38,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - IMAP__HOST=mail
-      - IMAP__PORT=993
-      - IMAP__USESSL=true
+      - IMAP__PORT=143
+      - IMAP__USESSL=false
       - SMTP__HOST=mail
       - SMTP__PORT=587
       - SMTP__USETLS=true
@@ -59,16 +59,19 @@ services:
       - papermail-net
 
   mail:
+    hostname: mail
+    domainname: papermail.local
     image: docker.io/mailserver/docker-mailserver:latest
     environment:
-      # Enable OAuth2 authentication
-      - ENABLE_OAUTH2=1
-      # Point to your OAuth provider's introspection endpoint
-      - OAUTH2_INTROSPECTION_URL=https://${OIDC_DOMAIN:-oidc.papermail.local}/token/introspection
-      # Define users with OAuth. They don't need a password defined in docker-mailserver.
-      - DMS_AUTH_OAUTH2_ACCOUNTS=user1@papermail.local,user2@papermail.local
-      # (Optional) Allow access from other containers
+      # Allow access from other containers
       - PERMIT_DOCKER=network
+      # Disable SSL requirement for development
+      - SSL_TYPE=
+      #- ENABLE_OAUTH2=1
+      # Point to your OAuth provider's introspection endpoint
+      #- OAUTH2_INTROSPECTION_URL=https://${OIDC_DOMAIN:-oidc.papermail.local}/token/introspection
+      # Define users with OAuth. They don't need a password defined in docker-mailserver.
+      #- DMS_AUTH_OAUTH2_ACCOUNTS=admin@papermail.local,user@papermail.local
     ports:
       - "25:25"
       - "465:465"

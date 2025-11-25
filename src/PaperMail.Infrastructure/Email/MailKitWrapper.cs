@@ -47,6 +47,8 @@ public sealed class MailKitWrapper : IMailKitWrapper
             throw new ArgumentNullException(nameof(settings));
         if (string.IsNullOrWhiteSpace(accessToken))
             throw new ArgumentException("Access token is required", nameof(accessToken));
+        if (string.IsNullOrWhiteSpace(settings.Username))
+            throw new ArgumentException("IMAP username is required", nameof(settings.Username));
         if (skip < 0)
             throw new ArgumentOutOfRangeException(nameof(skip), "Skip must be non-negative");
         if (take <= 0)
@@ -54,8 +56,9 @@ public sealed class MailKitWrapper : IMailKitWrapper
 
         using var client = _clientFactory.CreateClient();
         await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
-        
-        var oauth2 = new SaslMechanismOAuth2(accessToken, accessToken);
+
+        // Use XOAUTH2 with username and access token
+        var oauth2 = new MailKit.Security.SaslMechanismOAuth2(settings.Username, accessToken);
         await client.AuthenticateAsync(oauth2, ct);
 
         var inbox = client.Inbox;
@@ -63,7 +66,7 @@ public sealed class MailKitWrapper : IMailKitWrapper
 
         var emails = new List<EmailEntity>();
         var messageCount = Math.Min(take, inbox.Count - skip);
-        
+
         for (var i = skip; i < skip + messageCount; i++)
         {
             var message = await inbox.GetMessageAsync(i, ct);

@@ -39,7 +39,7 @@
             <input type="text" 
                    id="to" 
                    name="EmailRequest.To" 
-                   asp-for="EmailRequest.To" 
+                   value="@(Model.EmailRequest.To != null && Model.EmailRequest.To.Any() ? string.Join(", ", Model.EmailRequest.To) : string.Empty)"
                    placeholder="recipient@example.com" 
                    required 
                    aria-required="true"
