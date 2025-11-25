@@ -171,8 +171,10 @@ src/
 ├── PaperMail.Infrastructure/          # Infrastructure implementations
 │   ├── Email/                         # Email protocol implementation
 │   │   ├── ImapEmailRepository.cs    # IMAP implementation
+│   │   ├── ImapClientFactory.cs      # IMAP client creation
 │   │   ├── SmtpEmailSender.cs        # SMTP implementation
-│   │   ├── MailKitWrapper.cs         # MailKit abstraction
+│   │   ├── SmtpWrapper.cs            # SMTP with XOAUTH2/password fallback
+│   │   ├── MailKitWrapper.cs         # MailKit IMAP abstraction
 │   │   └── EmailParser.cs            # MIME parsing
 │   │
 │   ├── Authentication/                # Authentication implementations

@@ -84,7 +84,8 @@ public sealed class ImapEmailRepository : IEmailRepository
             Host = _smtpSettings.Host,
             Port = _smtpSettings.Port,
             UseTls = _smtpSettings.UseTls,
-            Username = userId
+            Username = userId,
+            Password = _smtpSettings.Password // include password for fallback auth
         };
 
         await _smtpWrapper.SendEmailAsync(settingsWithUser, accessToken, email, ct);

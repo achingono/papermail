@@ -367,7 +367,9 @@ public class ManualAuthService : IManualAuthService
 
 ## IMAP/SMTP Authentication
 
-### Using OAuth Tokens
+### Using OAuth Tokens (XOAUTH2)
+
+PaperMail supports OAuth2 authentication for mail protocols using the XOAUTH2 SASL mechanism. However, proper implementation requires careful attention to OIDC provider compatibility.
 
 ```csharp
 // Infrastructure/Email/ImapEmailRepository.cs
@@ -395,6 +397,91 @@ public class ImapEmailRepository : IEmailRepository
     }
 }
 ```
+
+#### OAuth2 Mail Server Requirements
+
+For XOAUTH2 to work without password fallback, the OIDC provider's **token introspection endpoint** must return RFC-compliant responses:
+
+**Required Fields**:
+- `active`: `true` (boolean)
+- `token_type`: `"Bearer"` (not `"access_token"`)
+- `sub` or `email`: User identifier matching the username_attribute in Dovecot configuration
+
+**Example Compliant Response**:
+```json
+{
+  "active": true,
+  "token_type": "Bearer",
+  "sub": "945dc90b-02ac-43e5-a4ab-2db744dce149",
+  "email": "user@example.com",
+  "client_id": "a92e2069-b509-450b-a9e8-d73cead8735a",
+  "exp": 1764087384,
+  "iat": 1764083784,
+  "iss": "https://oidc.example.com",
+  "scope": "openid profile email"
+}
+```
+
+**Known Issues**:
+
+The `qlik/simple-oidc-provider` used for development returns `"token_type": "access_token"` instead of `"Bearer"`, which causes Dovecot to reject the introspection response with:
+
+```
+oauth2 failed: Introspection failed: Expected Bearer token, got 'access_token'
+```
+
+**Production OIDC Providers** that return compliant responses:
+- Keycloak
+- Auth0
+- Okta
+- Azure AD B2C
+- AWS Cognito
+- Google Identity Platform
+
+### SMTP with STARTTLS
+
+PaperMail implements secure SMTP using STARTTLS on port 587:
+
+```csharp
+// Infrastructure/Email/SmtpWrapper.cs
+public async Task SendEmailAsync(MimeMessage message, string accessToken = null)
+{
+    using var client = new SmtpClient();
+    
+    // Connect with STARTTLS
+    await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.StartTls);
+    
+    // Try XOAUTH2 first if token available
+    if (!string.IsNullOrEmpty(accessToken) && 
+        client.AuthenticationMechanisms.Contains("XOAUTH2"))
+    {
+        var oauth2 = new SaslMechanismOAuth2(_settings.Username, accessToken);
+        await client.AuthenticateAsync(oauth2);
+    }
+    // Fallback to password authentication
+    else if (!string.IsNullOrEmpty(_settings.Password))
+    {
+        await client.AuthenticateAsync(_settings.Username, _settings.Password);
+    }
+    
+    await client.SendAsync(message);
+    await client.DisconnectAsync(true);
+}
+```
+
+#### Certificate Validation
+
+For development environments, certificate validation can be bypassed:
+
+```csharp
+// Only in development - detected via IHostEnvironment
+if (_isDevelopment)
+{
+    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+}
+```
+
+**Production**: Remove certificate validation bypass and ensure proper CA-signed certificates.
 
 ### Using Manual Credentials
 
@@ -626,6 +713,57 @@ public class AuthenticationException : Exception
 - Secure password storage (if manual auth)
 - Regular security audits
 
+## Dovecot OAuth2 Configuration
+
+When deploying a self-hosted mail server with OAuth2 support (e.g., docker-mailserver with Dovecot), configure the introspection endpoint:
+
+**Environment Variables** (docker-mailserver):
+```yaml
+environment:
+  - ENABLE_OAUTH2=1
+  - OAUTH2_INTROSPECTION_URL=https://your-oidc-provider.com/token/introspection
+  - OAUTH2_INTROSPECTION_MODE=post
+  - OAUTH2_CLIENT_ID=your-client-id
+  - OAUTH2_CLIENT_SECRET=your-client-secret
+  - OAUTH2_USERNAME_ATTRIBUTE=email  # or 'sub' depending on your provider
+```
+
+**Manual Configuration** (`dovecot-oauth2.conf.ext`):
+```conf
+introspection_url = https://your-oidc-provider.com/token/introspection
+introspection_mode = post
+client_id = your-client-id
+client_secret = your-client-secret
+username_attribute = email
+```
+
+**Testing Introspection**:
+
+Enable raw logging to debug introspection responses:
+
+```conf
+rawlog_dir = /tmp/oauth2
+debug = yes
+```
+
+Check logs for the actual introspection request/response to verify the `token_type` field value.
+
+## Development vs Production
+
+### Development Setup
+- Self-signed certificates with validation bypass
+- `qlik/simple-oidc-provider` for OAuth testing
+- Password fallback enabled
+- Relaxed security headers
+
+### Production Requirements
+- CA-signed TLS certificates
+- Production OIDC provider (Keycloak, Auth0, etc.)
+- Remove certificate validation bypass
+- Enforce HTTPS/HSTS
+- Enable all security headers
+- Consider OAuth2-only authentication (no password fallback)
+
 ## Future Enhancements
 
 - [ ] Multi-factor authentication support
@@ -634,3 +772,4 @@ public class AuthenticationException : Exception
 - [ ] WebAuthn/FIDO2 support
 - [ ] Device fingerprinting
 - [ ] Suspicious activity alerts
+- [ ] OIDC provider middleware to normalize introspection responses

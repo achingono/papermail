@@ -82,6 +82,7 @@ To provide a seamless, distraction-free email experience optimized for the calm,
 - **[Features Specification](./FEATURES.md)**: Complete feature list and requirements
 - **[Architecture](./ARCHITECTURE.md)**: System design and folder structure
 - **[Authentication](./AUTHENTICATION.md)**: OAuth and security implementation
+- **[Mail Server Configuration](./MAIL_SERVER.md)**: Self-hosted mail server setup and OAuth2 troubleshooting
 - **[UI/UX Guidelines](./UI_GUIDELINES.md)**: E-Ink specific design patterns
 - **[API Reference](./API.md)**: Internal API documentation (future)
 - **[Deployment](./DEPLOYMENT.md)**: Hosting and deployment guide (future)

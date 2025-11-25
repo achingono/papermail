@@ -1,0 +1,5 @@
+tokeninfo_url = http://oidc:8080/token/introspection?access_token=
+introspection_mode = post
+client_id = a92e2069-b509-450b-a9e8-d73cead8735a
+client_secret = YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh
+username_attribute = sub

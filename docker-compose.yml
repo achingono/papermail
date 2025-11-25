@@ -35,14 +35,15 @@ services:
     build:
       context: .
       dockerfile: src/PaperMail.Web/Dockerfile
+    entrypoint: ["sh","-c","update-ca-certificates && dotnet PaperMail.Web.dll"]
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - IMAP__HOST=mail
+      - IMAP__HOST=mail.papermail.local
       - IMAP__PORT=143
       - IMAP__USESSL=false
-      - SMTP__HOST=mail
-      - SMTP__PORT=25
-      - SMTP__USETLS=false
+      - SMTP__HOST=mail.papermail.local
+      - SMTP__PORT=587
+      - SMTP__USETLS=true
       - SMTP__USERNAME=admin@papermail.local
       - SMTP__PASSWORD=P@ssw0rd
       - OAUTH__CLIENTID=a92e2069-b509-450b-a9e8-d73cead8735a
@@ -53,6 +54,8 @@ services:
       - OAUTH__REDIRECTURI=https://${CLIENT_DOMAIN:-papermail.local}/oauth/callback
       - OAUTH__AUTHORIZATIONENDPOINT=https://${OIDC_DOMAIN:-oidc.papermail.local}/auth
       - OAUTH__TOKENENDPOINT=http://oidc:8080/token
+    volumes:
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.crt:/usr/local/share/ca-certificates/papermail.local.crt:ro
     depends_on:
       - mail
       - oidc
@@ -68,11 +71,15 @@ services:
       # Allow access from other containers
       - PERMIT_DOCKER=network
       # Disable SSL requirement for development
-      - SSL_TYPE=
+      - SSL_TYPE=self-signed
       # Enable OAuth2 authentication
       - ENABLE_OAUTH2=1
       # Point to your OAuth provider's introspection endpoint
       - OAUTH2_INTROSPECTION_URL=http://oidc:8080/token/introspection
+      - OAUTH2_INTROSPECTION_MODE=post
+      - OAUTH2_CLIENT_ID=a92e2069-b509-450b-a9e8-d73cead8735a
+      - OAUTH2_CLIENT_SECRET=YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh
+      - OAUTH2_USERNAME_ATTRIBUTE=email
       # Define users with OAuth. They don't need a password defined in docker-mailserver.
       - DMS_AUTH_OAUTH2_ACCOUNTS=admin@papermail.local,user@papermail.local
     ports:
@@ -85,12 +92,16 @@ services:
       - mailstate:/var/mail-state
       - maillogs:/var/log/mail
       - ./docker/mailserver/config/:/tmp/docker-mailserver/
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.crt:/tmp/docker-mailserver/ssl/mail.papermail.local-cert.pem:ro
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.key:/tmp/docker-mailserver/ssl/mail.papermail.local-key.pem:ro
     cap_add:
       - NET_ADMIN
       - SYS_PTRACE
     restart: unless-stopped
     networks:
-      - papermail-net
+      papermail-net:
+        aliases:
+          - mail.papermail.local
 
   oidc:
     image: qlik/simple-oidc-provider:latest

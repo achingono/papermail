@@ -18,8 +18,10 @@ builder.Services.Configure<OAuthSettings>(builder.Configuration.GetSection("OAut
 
 // Register infrastructure services
 builder.Services.AddSingleton<ITokenStorage, TokenStorage>();
-builder.Services.AddSingleton<IMailKitWrapper, MailKitWrapper>();
-builder.Services.AddSingleton<ISmtpWrapper, SmtpWrapper>();
+builder.Services.AddSingleton<IMailKitWrapper>(sp => 
+    new MailKitWrapper(new ImapClientFactory(), builder.Environment));
+builder.Services.AddSingleton<ISmtpWrapper>(sp => 
+    new SmtpWrapper(new SmtpClientFactory(), builder.Environment));
 builder.Services.AddScoped<IEmailRepository, ImapEmailRepository>();
 
 // Register OAuth service

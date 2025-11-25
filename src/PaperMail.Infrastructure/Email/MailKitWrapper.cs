@@ -1,6 +1,7 @@
 using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Security;
+using Microsoft.Extensions.Hosting;
 using MimeKit;
 using PaperMail.Core.Entities;
 using PaperMail.Infrastructure.Configuration;
@@ -27,14 +28,12 @@ public class ImapClientFactory : IImapClientFactory
 public sealed class MailKitWrapper : IMailKitWrapper
 {
     private readonly IImapClientFactory _clientFactory;
+    private readonly bool _isDevelopment;
 
-    public MailKitWrapper() : this(new ImapClientFactory())
-    {
-    }
-
-    public MailKitWrapper(IImapClientFactory clientFactory)
+    public MailKitWrapper(IImapClientFactory clientFactory, IHostEnvironment environment)
     {
         _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
+        _isDevelopment = environment?.IsDevelopment() ?? false;
     }
 
     public async Task<IEnumerable<EmailEntity>> FetchEmailsAsync(
@@ -56,6 +55,13 @@ public sealed class MailKitWrapper : IMailKitWrapper
             throw new ArgumentOutOfRangeException(nameof(take), "Take must be greater than zero");
 
         using var client = _clientFactory.CreateClient();
+        
+        // Accept self-signed certificates only in development environment
+        if (_isDevelopment)
+        {
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+        }
+        
         await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
 
         // Use XOAUTH2 with username and access token
@@ -94,6 +100,13 @@ public sealed class MailKitWrapper : IMailKitWrapper
             throw new ArgumentNullException(nameof(draft));
 
         using var client = _clientFactory.CreateClient();
+        
+        // Accept self-signed certificates only in development environment
+        if (_isDevelopment)
+        {
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+        }
+        
         await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
 
         var oauth2 = new MailKit.Security.SaslMechanismOAuth2(settings.Username, accessToken);
