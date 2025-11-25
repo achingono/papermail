@@ -9,4 +9,5 @@ public interface IEmailRepository
     Task MarkReadAsync(Guid id, CancellationToken ct = default);
     Task SaveDraftAsync(Email draft, string userId, CancellationToken ct = default);
     Task SendEmailAsync(Email email, string userId, CancellationToken ct = default);
+    Task DeleteAsync(Guid id, CancellationToken ct = default);
 }

@@ -11,4 +11,5 @@
 .text-2xl{font-size:1.5rem;line-height:2rem}
 .font-bold{font-weight:700}
 .no-underline{text-decoration:none}
-.hover\:underline:hover{text-decoration:underline}
+.hover\:underline:hover{text-decoration:underline}/* Danger button for delete actions */
+.btn-danger{background-color:#000;color:#fff;border:2px solid #000}.btn-danger:hover,.btn-danger:focus{background-color:#fff;color:#000}

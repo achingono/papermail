@@ -21,11 +21,66 @@ public class ComposeModel : PageModel
     public ComposeEmailRequest EmailRequest { get; set; } = new();
 
     public List<string> ValidationErrors { get; private set; } = new();
-    public string? ErrorMessage { get; private set; }
+    public string? ErrorMessage { get; private set; };
+    public string? ComposeMode { get; private set; } // "reply", "replyall", "forward"
 
-    public void OnGet()
+    public async Task<IActionResult> OnGetAsync(Guid? reply, Guid? replyall, Guid? forward)
     {
-        // Initialize empty form
+        try
+        {
+            // Handle reply
+            if (reply.HasValue)
+            {
+                var originalEmail = await _emailService.GetEmailByIdAsync(reply.Value);
+                if (originalEmail != null)
+                {
+                    ComposeMode = "reply";
+                    EmailRequest.To = new List<string> { originalEmail.From };
+                    EmailRequest.Subject = originalEmail.Subject.StartsWith("Re: ") 
+                        ? originalEmail.Subject 
+                        : $"Re: {originalEmail.Subject}";
+                    EmailRequest.BodyPlain = $"\n\n---\nOn {originalEmail.ReceivedAt:yyyy-MM-dd HH:mm}, {originalEmail.From} wrote:\n{originalEmail.BodyPlain}";
+                }
+            }
+            // Handle reply all
+            else if (replyall.HasValue)
+            {
+                var originalEmail = await _emailService.GetEmailByIdAsync(replyall.Value);
+                if (originalEmail != null)
+                {
+                    ComposeMode = "replyall";
+                    // Include original sender + all original recipients
+                    var recipients = new List<string> { originalEmail.From };
+                    recipients.AddRange(originalEmail.To);
+                    EmailRequest.To = recipients.Distinct().ToList();
+                    EmailRequest.Subject = originalEmail.Subject.StartsWith("Re: ") 
+                        ? originalEmail.Subject 
+                        : $"Re: {originalEmail.Subject}";
+                    EmailRequest.BodyPlain = $"\n\n---\nOn {originalEmail.ReceivedAt:yyyy-MM-dd HH:mm}, {originalEmail.From} wrote:\n{originalEmail.BodyPlain}";
+                }
+            }
+            // Handle forward
+            else if (forward.HasValue)
+            {
+                var originalEmail = await _emailService.GetEmailByIdAsync(forward.Value);
+                if (originalEmail != null)
+                {
+                    ComposeMode = "forward";
+                    EmailRequest.Subject = originalEmail.Subject.StartsWith("Fwd: ") 
+                        ? originalEmail.Subject 
+                        : $"Fwd: {originalEmail.Subject}";
+                    EmailRequest.BodyPlain = $"\n\n---\nForwarded message:\nFrom: {originalEmail.From}\nDate: {originalEmail.ReceivedAt:yyyy-MM-dd HH:mm}\nSubject: {originalEmail.Subject}\nTo: {string.Join(", ", originalEmail.To)}\n\n{originalEmail.BodyPlain}";
+                }
+            }
+
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error initializing compose form");
+            ErrorMessage = "An error occurred while loading the email.";
+            return Page();
+        }
     }
 
     public async Task<IActionResult> OnPostAsync(string action)

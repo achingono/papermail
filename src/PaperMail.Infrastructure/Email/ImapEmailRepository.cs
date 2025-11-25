@@ -103,4 +103,9 @@ public sealed class ImapEmailRepository : IEmailRepository
 
         await _smtpWrapper.SendEmailAsync(settingsWithUser, accessToken, email, ct);
     }
+
+    public Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        throw new NotImplementedException("Delete requires IMAP message deletion implementation");
+    }
 }

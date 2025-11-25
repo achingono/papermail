@@ -1,7 +1,14 @@
 @page
 @model PaperMail.Web.Pages.ComposeModel
 @{
-    ViewData["Title"] = "Compose Email";
+    var title = Model.ComposeMode switch
+    {
+        "reply" => "Reply to Email",
+        "replyall" => "Reply All",
+        "forward" => "Forward Email",
+        _ => "Compose Email"
+    };
+    ViewData["Title"] = title;
 }
 
 <div class="container">
@@ -10,7 +17,7 @@
     </nav>
 
     <header class="page-header">
-        <h1>Compose Email</h1>
+        <h1>@ViewData["Title"]</h1>
     </header>
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))

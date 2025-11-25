@@ -67,4 +67,9 @@ public class EmailService : IEmailService
         await _emailRepository.SendEmailAsync(email, userId);
         return email.Id;
     }
+
+    public async Task DeleteEmailAsync(Guid emailId)
+    {
+        await _emailRepository.DeleteAsync(emailId);
+    }
 }

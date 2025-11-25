@@ -32,4 +32,9 @@ public interface IEmailService
     /// Sends an email via SMTP.
     /// </summary>
     Task<Guid> SendEmailAsync(ComposeEmailRequest request, string userId);
+
+    /// <summary>
+    /// Deletes an email by ID.
+    /// </summary>
+    Task DeleteEmailAsync(Guid emailId);
 }

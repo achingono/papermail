@@ -43,4 +43,19 @@ public class EmailDetailModel : PageModel
             return RedirectToPage("/Error");
         }
     }
+
+    public async Task<IActionResult> OnPostDeleteAsync(Guid emailId)
+    {
+        try
+        {
+            await _emailService.DeleteEmailAsync(emailId);
+            _logger.LogInformation("Email {EmailId} deleted", emailId);
+            return RedirectToPage("/Inbox");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting email {EmailId}", emailId);
+            return RedirectToPage("/Error");
+        }
+    }
 }
