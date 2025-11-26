@@ -16,12 +16,12 @@ public interface IEmailService
     /// <summary>
     /// Retrieves a single email by ID.
     /// </summary>
-    Task<EmailDetailDto?> GetEmailByIdAsync(Guid emailId);
+    Task<EmailDetailDto?> GetEmailByIdAsync(Guid emailId, string userId);
 
     /// <summary>
     /// Marks an email as read.
     /// </summary>
-    Task MarkAsReadAsync(Guid emailId);
+    Task MarkAsReadAsync(Guid emailId, string userId);
 
     /// <summary>
     /// Saves a draft email.
@@ -36,5 +36,5 @@ public interface IEmailService
     /// <summary>
     /// Deletes an email by ID.
     /// </summary>
-    Task DeleteEmailAsync(Guid emailId);
+    Task DeleteEmailAsync(Guid emailId, string userId);
 }

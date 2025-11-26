@@ -13,6 +13,9 @@ public interface IMailKitWrapper
 {
     Task<IEnumerable<EmailEntity>> FetchEmailsAsync(ImapSettings settings, string accessToken, int skip, int take, CancellationToken ct = default);
     Task SaveDraftAsync(ImapSettings settings, string accessToken, EmailEntity draft, CancellationToken ct = default);
+    Task<EmailEntity?> GetEmailByIdAsync(ImapSettings settings, string accessToken, Guid emailId, CancellationToken ct = default);
+    Task MarkReadAsync(ImapSettings settings, string accessToken, Guid emailId, CancellationToken ct = default);
+    Task DeleteAsync(ImapSettings settings, string accessToken, Guid emailId, CancellationToken ct = default);
 }
 
 public interface IImapClientFactory
@@ -177,6 +180,192 @@ public sealed class MailKitWrapper : IMailKitWrapper
         await client.DisconnectAsync(true, ct);
     }
 
+    public async Task<EmailEntity?> GetEmailByIdAsync(
+        ImapSettings settings,
+        string accessToken,
+        Guid emailId,
+        CancellationToken ct = default)
+    {
+        if (settings == null)
+            throw new ArgumentNullException(nameof(settings));
+        if (string.IsNullOrWhiteSpace(accessToken))
+            throw new ArgumentException("Access token is required", nameof(accessToken));
+        if (string.IsNullOrWhiteSpace(settings.Username))
+            throw new ArgumentException("IMAP username is required", nameof(settings.Username));
+
+        using var client = _clientFactory.CreateClient();
+        
+        if (_isDevelopment)
+        {
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+        }
+        
+        await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
+
+        var authenticated = false;
+        var mechanisms = client.AuthenticationMechanisms;
+
+        if (!string.IsNullOrWhiteSpace(accessToken) && mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var oauth2 = new SaslMechanismOAuth2(settings.Username, accessToken);
+                await client.AuthenticateAsync(oauth2, ct);
+                authenticated = true;
+            }
+            catch (AuthenticationException)
+            {
+            }
+        }
+
+        if (!authenticated && !string.IsNullOrWhiteSpace(settings.Password) &&
+            (mechanisms.Contains("PLAIN", StringComparer.OrdinalIgnoreCase) || mechanisms.Contains("LOGIN", StringComparer.OrdinalIgnoreCase)))
+        {
+            await client.AuthenticateAsync(settings.Username, settings.Password, ct);
+            authenticated = true;
+        }
+
+        if (!authenticated)
+        {
+            throw new AuthenticationException("Failed to authenticate via XOAUTH2 and no valid fallback available.");
+        }
+
+        var inbox = client.Inbox;
+        var message = await FindMessageByIdAsync(inbox, emailId, ct);
+
+        await client.DisconnectAsync(true, ct);
+        
+        return message != null ? MapToEmail(message) : null;
+    }
+
+    public async Task MarkReadAsync(
+        ImapSettings settings,
+        string accessToken,
+        Guid emailId,
+        CancellationToken ct = default)
+    {
+        if (settings == null)
+            throw new ArgumentNullException(nameof(settings));
+        if (string.IsNullOrWhiteSpace(accessToken))
+            throw new ArgumentException("Access token is required", nameof(accessToken));
+        if (string.IsNullOrWhiteSpace(settings.Username))
+            throw new ArgumentException("IMAP username is required", nameof(settings.Username));
+
+        using var client = _clientFactory.CreateClient();
+        
+        if (_isDevelopment)
+        {
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+        }
+        
+        await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
+
+        var authenticated = false;
+        var mechanisms = client.AuthenticationMechanisms;
+
+        if (!string.IsNullOrWhiteSpace(accessToken) && mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var oauth2 = new SaslMechanismOAuth2(settings.Username, accessToken);
+                await client.AuthenticateAsync(oauth2, ct);
+                authenticated = true;
+            }
+            catch (AuthenticationException)
+            {
+            }
+        }
+
+        if (!authenticated && !string.IsNullOrWhiteSpace(settings.Password) &&
+            (mechanisms.Contains("PLAIN", StringComparer.OrdinalIgnoreCase) || mechanisms.Contains("LOGIN", StringComparer.OrdinalIgnoreCase)))
+        {
+            await client.AuthenticateAsync(settings.Username, settings.Password, ct);
+            authenticated = true;
+        }
+
+        if (!authenticated)
+        {
+            throw new AuthenticationException("Failed to authenticate via XOAUTH2 and no valid fallback available.");
+        }
+
+        var inbox = client.Inbox;
+        await inbox.OpenAsync(FolderAccess.ReadWrite, ct);
+        
+        var index = await FindMessageIndexByIdAsync(inbox, emailId, ct);
+        
+        if (index.HasValue)
+        {
+            await inbox.AddFlagsAsync(index.Value, MessageFlags.Seen, true, ct);
+        }
+
+        await client.DisconnectAsync(true, ct);
+    }
+
+    public async Task DeleteAsync(
+        ImapSettings settings,
+        string accessToken,
+        Guid emailId,
+        CancellationToken ct = default)
+    {
+        if (settings == null)
+            throw new ArgumentNullException(nameof(settings));
+        if (string.IsNullOrWhiteSpace(accessToken))
+            throw new ArgumentException("Access token is required", nameof(accessToken));
+        if (string.IsNullOrWhiteSpace(settings.Username))
+            throw new ArgumentException("IMAP username is required", nameof(settings.Username));
+
+        using var client = _clientFactory.CreateClient();
+        
+        if (_isDevelopment)
+        {
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+        }
+        
+        await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
+
+        var authenticated = false;
+        var mechanisms = client.AuthenticationMechanisms;
+
+        if (!string.IsNullOrWhiteSpace(accessToken) && mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var oauth2 = new SaslMechanismOAuth2(settings.Username, accessToken);
+                await client.AuthenticateAsync(oauth2, ct);
+                authenticated = true;
+            }
+            catch (AuthenticationException)
+            {
+            }
+        }
+
+        if (!authenticated && !string.IsNullOrWhiteSpace(settings.Password) &&
+            (mechanisms.Contains("PLAIN", StringComparer.OrdinalIgnoreCase) || mechanisms.Contains("LOGIN", StringComparer.OrdinalIgnoreCase)))
+        {
+            await client.AuthenticateAsync(settings.Username, settings.Password, ct);
+            authenticated = true;
+        }
+
+        if (!authenticated)
+        {
+            throw new AuthenticationException("Failed to authenticate via XOAUTH2 and no valid fallback available.");
+        }
+
+        var inbox = client.Inbox;
+        await inbox.OpenAsync(FolderAccess.ReadWrite, ct);
+        
+        var index = await FindMessageIndexByIdAsync(inbox, emailId, ct);
+        
+        if (index.HasValue)
+        {
+            // Mark as deleted and expunge immediately
+            await inbox.AddFlagsAsync(index.Value, MessageFlags.Deleted, true, ct);
+            await inbox.ExpungeAsync(ct);
+        }
+
+        await client.DisconnectAsync(true, ct);
+    }
+
     private static MimeMessage CreateMimeMessage(EmailEntity email)
     {
         var message = new MimeMessage();
@@ -228,7 +417,12 @@ public sealed class MailKitWrapper : IMailKitWrapper
                 a.ContentType.MimeType))
             .ToList();
 
-        return EmailEntity.Create(
+        // Use Message-ID to create deterministic GUID
+        var messageId = message.MessageId ?? Guid.NewGuid().ToString();
+        var emailId = CreateDeterministicGuid(messageId);
+
+        return EmailEntity.CreateWithId(
+            emailId,
             from,
             to,
             message.Subject ?? "(no subject)",
@@ -237,5 +431,52 @@ public sealed class MailKitWrapper : IMailKitWrapper
             message.Date,
             attachments
         );
+    }
+
+    private static Guid CreateDeterministicGuid(string input)
+    {
+        using var md5 = System.Security.Cryptography.MD5.Create();
+        var hash = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+        return new Guid(hash);
+    }
+
+    private static async Task<MimeMessage?> FindMessageByIdAsync(IMailFolder folder, Guid emailId, CancellationToken ct)
+    {
+        await folder.OpenAsync(FolderAccess.ReadWrite, ct);
+        
+        // Search through all messages to find matching Message-ID
+        for (int i = 0; i < folder.Count; i++)
+        {
+            var message = await folder.GetMessageAsync(i, ct);
+            var messageId = message.MessageId ?? string.Empty;
+            var messageGuid = CreateDeterministicGuid(messageId);
+            
+            if (messageGuid == emailId)
+            {
+                return message;
+            }
+        }
+        
+        return null;
+    }
+
+    private static async Task<int?> FindMessageIndexByIdAsync(IMailFolder folder, Guid emailId, CancellationToken ct)
+    {
+        await folder.OpenAsync(FolderAccess.ReadWrite, ct);
+        
+        // Search through all messages to find matching Message-ID
+        for (int i = 0; i < folder.Count; i++)
+        {
+            var message = await folder.GetMessageAsync(i, ct);
+            var messageId = message.MessageId ?? string.Empty;
+            var messageGuid = CreateDeterministicGuid(messageId);
+            
+            if (messageGuid == emailId)
+            {
+                return i;
+            }
+        }
+        
+        return null;
     }
 }

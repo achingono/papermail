@@ -29,10 +29,29 @@ public sealed class ImapEmailRepository : IEmailRepository
         _tokenStorage = tokenStorage ?? throw new ArgumentNullException(nameof(tokenStorage));
     }
 
-    public Task<EmailEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<EmailEntity?> GetByIdAsync(Guid id, string userId, CancellationToken ct = default)
     {
-        // Placeholder: IMAP doesn't use GUIDs directly, needs mapping
-        throw new NotImplementedException("Email by ID requires UID mapping implementation");
+        var accessToken = await _tokenStorage.GetAccessTokenAsync(userId, ct)
+            ?? throw new InvalidOperationException("No access token available");
+
+        var password = string.IsNullOrWhiteSpace(_imapSettings.Password) ? _smtpSettings.Password : _imapSettings.Password;
+        var settingsWithUser = new ImapSettings
+        {
+            Host = _imapSettings.Host,
+            Port = _imapSettings.Port,
+            UseSsl = _imapSettings.UseSsl,
+            Username = userId,
+            Password = password
+        };
+
+        try
+        {
+            return await _mailKit.GetEmailByIdAsync(settingsWithUser, accessToken, id, ct);
+        }
+        catch (AuthenticationException)
+        {
+            return null;
+        }
     }
 
     public async Task<IReadOnlyCollection<EmailEntity>> GetInboxAsync(string userId, int page, int pageSize, CancellationToken ct = default)
@@ -64,9 +83,22 @@ public sealed class ImapEmailRepository : IEmailRepository
         }
     }
 
-    public Task MarkReadAsync(Guid id, CancellationToken ct = default)
+    public async Task MarkReadAsync(Guid id, string userId, CancellationToken ct = default)
     {
-        throw new NotImplementedException("Mark read requires IMAP flag operation");
+        var accessToken = await _tokenStorage.GetAccessTokenAsync(userId, ct)
+            ?? throw new InvalidOperationException("No access token available");
+
+        var password = string.IsNullOrWhiteSpace(_imapSettings.Password) ? _smtpSettings.Password : _imapSettings.Password;
+        var settingsWithUser = new ImapSettings
+        {
+            Host = _imapSettings.Host,
+            Port = _imapSettings.Port,
+            UseSsl = _imapSettings.UseSsl,
+            Username = userId,
+            Password = password
+        };
+
+        await _mailKit.MarkReadAsync(settingsWithUser, accessToken, id, ct);
     }
 
     public async Task SaveDraftAsync(EmailEntity draft, string userId, CancellationToken ct = default)
@@ -104,8 +136,21 @@ public sealed class ImapEmailRepository : IEmailRepository
         await _smtpWrapper.SendEmailAsync(settingsWithUser, accessToken, email, ct);
     }
 
-    public Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, string userId, CancellationToken ct = default)
     {
-        throw new NotImplementedException("Delete requires IMAP message deletion implementation");
+        var accessToken = await _tokenStorage.GetAccessTokenAsync(userId, ct)
+            ?? throw new InvalidOperationException("No access token available");
+
+        var password = string.IsNullOrWhiteSpace(_imapSettings.Password) ? _smtpSettings.Password : _imapSettings.Password;
+        var settingsWithUser = new ImapSettings
+        {
+            Host = _imapSettings.Host,
+            Port = _imapSettings.Port,
+            UseSsl = _imapSettings.UseSsl,
+            Username = userId,
+            Password = password
+        };
+
+        await _mailKit.DeleteAsync(settingsWithUser, accessToken, id, ct);
     }
 }

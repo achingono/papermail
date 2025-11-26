@@ -22,7 +22,14 @@ public class EmailDetailModel : PageModel
     {
         try
         {
-            Email = await _emailService.GetEmailByIdAsync(id);
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("No user session found, redirecting to login");
+                return RedirectToPage("/oauth/login");
+            }
+
+            Email = await _emailService.GetEmailByIdAsync(id, userId);
             
             if (Email == null)
             {
@@ -32,7 +39,7 @@ public class EmailDetailModel : PageModel
             // Mark as read when viewing
             if (!Email.IsRead)
             {
-                await _emailService.MarkAsReadAsync(id);
+                await _emailService.MarkAsReadAsync(id, userId);
             }
 
             return Page();
@@ -48,8 +55,15 @@ public class EmailDetailModel : PageModel
     {
         try
         {
-            await _emailService.DeleteEmailAsync(emailId);
-            _logger.LogInformation("Email {EmailId} deleted", emailId);
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("No user session found, redirecting to login");
+                return RedirectToPage("/oauth/login");
+            }
+
+            await _emailService.DeleteEmailAsync(emailId, userId);
+            _logger.LogInformation("Email {EmailId} deleted by user {UserId}", emailId, userId);
             return RedirectToPage("/Inbox");
         }
         catch (Exception ex)

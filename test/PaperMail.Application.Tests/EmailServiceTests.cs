@@ -40,7 +40,7 @@ public class EmailServiceTests
         };
 
         _repositoryMock
-            .Setup(r => r.GetInboxAsync(0, 50, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetInboxAsync("user123", 0, 50, It.IsAny<CancellationToken>()))
             .ReturnsAsync(emails);
 
         // Act
@@ -50,7 +50,7 @@ public class EmailServiceTests
         result.Should().HaveCount(2);
         result[0].Subject.Should().Be("Email 1");
         result[1].Subject.Should().Be("Email 2");
-        _repositoryMock.Verify(r => r.GetInboxAsync(0, 50, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(r => r.GetInboxAsync("user123", 0, 50, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -99,11 +99,11 @@ public class EmailServiceTests
         var email = Email.Create(from, to, "Test Subject", "Body", "<p>HTML</p>", DateTimeOffset.UtcNow);
 
         _repositoryMock
-            .Setup(r => r.GetByIdAsync(emailId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(emailId, "user123", It.IsAny<CancellationToken>()))
             .ReturnsAsync(email);
 
         // Act
-        var result = await _service.GetEmailByIdAsync(emailId);
+        var result = await _service.GetEmailByIdAsync(emailId, "user123");
 
         // Assert
         result.Should().NotBeNull();
@@ -120,11 +120,11 @@ public class EmailServiceTests
         // Arrange
         var emailId = Guid.NewGuid();
         _repositoryMock
-            .Setup(r => r.GetByIdAsync(emailId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(emailId, "user123", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Email?)null);
 
         // Act
-        var result = await _service.GetEmailByIdAsync(emailId);
+        var result = await _service.GetEmailByIdAsync(emailId, "user123");
 
         // Assert
         result.Should().BeNull();
@@ -136,14 +136,14 @@ public class EmailServiceTests
         // Arrange
         var emailId = Guid.NewGuid();
         _repositoryMock
-            .Setup(r => r.MarkReadAsync(emailId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.MarkReadAsync(emailId, "user123", It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
-        await _service.MarkAsReadAsync(emailId);
+        await _service.MarkAsReadAsync(emailId, "user123");
 
         // Assert
-        _repositoryMock.Verify(r => r.MarkReadAsync(emailId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(r => r.MarkReadAsync(emailId, "user123", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public class EmailServiceTests
         };
 
         _repositoryMock
-            .Setup(r => r.SaveDraftAsync(It.IsAny<Email>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.SaveDraftAsync(It.IsAny<Email>(), "sender@example.com", It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -169,7 +169,7 @@ public class EmailServiceTests
         _repositoryMock.Verify(r => r.SaveDraftAsync(It.Is<Email>(e => 
             e.Subject == "Draft Subject" && 
             e.From.Value == "sender@example.com"
-        ), It.IsAny<CancellationToken>()), Times.Once);
+        ), "sender@example.com", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class EmailServiceTests
     }
 
     [Fact]
-    public async Task SaveDraftAsync_EmptyFromAddress_ThrowsArgumentException()
+    public async Task SaveDraftAsync_EmptyUserId_ThrowsArgumentException()
     {
         // Arrange
         var request = new ComposeEmailRequest
@@ -195,7 +195,7 @@ public class EmailServiceTests
         // Act & Assert
         var act = async () => await _service.SaveDraftAsync(request, "");
         await act.Should().ThrowAsync<ArgumentException>()
-            .WithParameterName("fromAddress");
+            .WithParameterName("userId");
     }
 
     [Fact]
@@ -203,13 +203,13 @@ public class EmailServiceTests
     {
         // Arrange
         _repositoryMock
-            .Setup(r => r.GetInboxAsync(2, 25, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetInboxAsync("user123", 2, 25, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<Email>());
 
         // Act
         await _service.GetInboxAsync("user123", page: 2, pageSize: 25);
 
         // Assert
-        _repositoryMock.Verify(r => r.GetInboxAsync(2, 25, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(r => r.GetInboxAsync("user123", 2, 25, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -21,17 +21,24 @@ public class ComposeModel : PageModel
     public ComposeEmailRequest EmailRequest { get; set; } = new();
 
     public List<string> ValidationErrors { get; private set; } = new();
-    public string? ErrorMessage { get; private set; };
+    public string? ErrorMessage { get; private set; }
     public string? ComposeMode { get; private set; } // "reply", "replyall", "forward"
 
     public async Task<IActionResult> OnGetAsync(Guid? reply, Guid? replyall, Guid? forward)
     {
         try
         {
+            // Get userId from session
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToPage("/OAuth/Login");
+            }
+
             // Handle reply
             if (reply.HasValue)
             {
-                var originalEmail = await _emailService.GetEmailByIdAsync(reply.Value);
+                var originalEmail = await _emailService.GetEmailByIdAsync(reply.Value, userId);
                 if (originalEmail != null)
                 {
                     ComposeMode = "reply";
@@ -45,7 +52,7 @@ public class ComposeModel : PageModel
             // Handle reply all
             else if (replyall.HasValue)
             {
-                var originalEmail = await _emailService.GetEmailByIdAsync(replyall.Value);
+                var originalEmail = await _emailService.GetEmailByIdAsync(replyall.Value, userId);
                 if (originalEmail != null)
                 {
                     ComposeMode = "replyall";
@@ -62,7 +69,7 @@ public class ComposeModel : PageModel
             // Handle forward
             else if (forward.HasValue)
             {
-                var originalEmail = await _emailService.GetEmailByIdAsync(forward.Value);
+                var originalEmail = await _emailService.GetEmailByIdAsync(forward.Value, userId);
                 if (originalEmail != null)
                 {
                     ComposeMode = "forward";

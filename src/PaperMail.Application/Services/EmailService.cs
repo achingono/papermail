@@ -31,15 +31,15 @@ public class EmailService : IEmailService
         return emails.Select(EmailMapper.ToListItemDto).ToList();
     }
 
-    public async Task<EmailDetailDto?> GetEmailByIdAsync(Guid emailId)
+    public async Task<EmailDetailDto?> GetEmailByIdAsync(Guid emailId, string userId)
     {
-        var email = await _emailRepository.GetByIdAsync(emailId);
+        var email = await _emailRepository.GetByIdAsync(emailId, userId);
         return email == null ? null : EmailMapper.ToDetailDto(email);
     }
 
-    public async Task MarkAsReadAsync(Guid emailId)
+    public async Task MarkAsReadAsync(Guid emailId, string userId)
     {
-        await _emailRepository.MarkReadAsync(emailId);
+        await _emailRepository.MarkReadAsync(emailId, userId);
     }
 
     public async Task<Guid> SaveDraftAsync(ComposeEmailRequest request, string userId)
@@ -68,8 +68,8 @@ public class EmailService : IEmailService
         return email.Id;
     }
 
-    public async Task DeleteEmailAsync(Guid emailId)
+    public async Task DeleteEmailAsync(Guid emailId, string userId)
     {
-        await _emailRepository.DeleteAsync(emailId);
+        await _emailRepository.DeleteAsync(emailId, userId);
     }
 }

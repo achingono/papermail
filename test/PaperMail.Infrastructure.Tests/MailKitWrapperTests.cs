@@ -13,6 +13,7 @@ public class MailKitWrapperTests
     private readonly Mock<IImapClientFactory> _clientFactoryMock;
     private readonly Mock<IImapClient> _imapClientMock;
     private readonly Mock<IMailFolder> _inboxMock;
+    private readonly Mock<Microsoft.Extensions.Hosting.IHostEnvironment> _environmentMock;
     private readonly MailKitWrapper _wrapper;
     private readonly ImapSettings _settings;
 
@@ -21,25 +22,31 @@ public class MailKitWrapperTests
         _clientFactoryMock = new Mock<IImapClientFactory>();
         _imapClientMock = new Mock<IImapClient>();
         _inboxMock = new Mock<IMailFolder>();
+        _environmentMock = new Mock<Microsoft.Extensions.Hosting.IHostEnvironment>();
+        _environmentMock.Setup(e => e.EnvironmentName).Returns("Production");
         
         _settings = new ImapSettings
         {
             Host = "imap.test.com",
             Port = 993,
-            UseSsl = true
+            UseSsl = true,
+            Username = "test@example.com",
+            Password = "password"
         };
 
         _imapClientMock.Setup(c => c.Inbox).Returns(_inboxMock.Object);
+        _imapClientMock.Setup(c => c.AuthenticationMechanisms).Returns(new HashSet<string> { "XOAUTH2" });
         _clientFactoryMock.Setup(f => f.CreateClient()).Returns(_imapClientMock.Object);
         
-        _wrapper = new MailKitWrapper(_clientFactoryMock.Object);
+        _wrapper = new MailKitWrapper(_clientFactoryMock.Object, _environmentMock.Object);
     }
 
     [Fact]
     public void Constructor_NullClientFactory_ThrowsArgumentNullException()
     {
         // Act & Assert
-        var act = () => new MailKitWrapper(null!);
+        var mockEnv = new Mock<Microsoft.Extensions.Hosting.IHostEnvironment>();
+        var act = () => new MailKitWrapper(null!, mockEnv.Object);
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("clientFactory");
     }

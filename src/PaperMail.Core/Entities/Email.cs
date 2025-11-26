@@ -4,7 +4,7 @@ namespace PaperMail.Core.Entities;
 
 public sealed class Email
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; }
     public EmailAddress From { get; }
     public IReadOnlyCollection<EmailAddress> To { get; }
     public string Subject { get; }
@@ -15,6 +15,7 @@ public sealed class Email
     public IReadOnlyCollection<Attachment> Attachments { get; }
 
     private Email(
+        Guid? id,
         EmailAddress from,
         IEnumerable<EmailAddress> to,
         string subject,
@@ -23,6 +24,7 @@ public sealed class Email
         DateTimeOffset receivedAt,
         IEnumerable<Attachment>? attachments)
     {
+        Id = id ?? Guid.NewGuid();
         From = from;
         To = new ReadOnlyCollection<EmailAddress>(to.ToList());
         Subject = subject;
@@ -45,7 +47,24 @@ public sealed class Email
         if (to is null || !to.Any()) throw new ArgumentException("At least one recipient required", nameof(to));
         if (subject is null) throw new ArgumentNullException(nameof(subject));
         if (bodyPlain is null) throw new ArgumentNullException(nameof(bodyPlain));
-        return new Email(from, to, subject.Trim(), bodyPlain, bodyHtml, receivedAt, attachments);
+        return new Email(null, from, to, subject.Trim(), bodyPlain, bodyHtml, receivedAt, attachments);
+    }
+
+    public static Email CreateWithId(
+        Guid id,
+        EmailAddress from,
+        IEnumerable<EmailAddress> to,
+        string subject,
+        string bodyPlain,
+        string? bodyHtml,
+        DateTimeOffset receivedAt,
+        IEnumerable<Attachment>? attachments = null)
+    {
+        if (from is null) throw new ArgumentNullException(nameof(from));
+        if (to is null || !to.Any()) throw new ArgumentException("At least one recipient required", nameof(to));
+        if (subject is null) throw new ArgumentNullException(nameof(subject));
+        if (bodyPlain is null) throw new ArgumentNullException(nameof(bodyPlain));
+        return new Email(id, from, to, subject.Trim(), bodyPlain, bodyHtml, receivedAt, attachments);
     }
 
     public void MarkRead() => IsRead = true;
