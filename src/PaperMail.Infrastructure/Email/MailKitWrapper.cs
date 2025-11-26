@@ -440,40 +440,79 @@ public sealed class MailKitWrapper : IMailKitWrapper
         return new Guid(hash);
     }
 
+    /// <summary>
+    /// Finds a message by its GUID (derived from Message-ID) using batch IMAP FETCH.
+    /// Uses IMAP FETCH with MessageSummaryItems.Envelope to retrieve only headers in batches,
+    /// significantly reducing network traffic compared to fetching full messages.
+    /// </summary>
     private static async Task<MimeMessage?> FindMessageByIdAsync(IMailFolder folder, Guid emailId, CancellationToken ct)
     {
         await folder.OpenAsync(FolderAccess.ReadWrite, ct);
         
-        // Search through all messages to find matching Message-ID
-        for (int i = 0; i < folder.Count; i++)
+        if (folder.Count == 0)
+            return null;
+        
+        // Batch fetch headers for better performance
+        // Process in chunks to avoid overwhelming the server
+        const int batchSize = 100;
+        
+        for (int offset = 0; offset < folder.Count; offset += batchSize)
         {
-            var message = await folder.GetMessageAsync(i, ct);
-            var messageId = message.MessageId ?? string.Empty;
-            var messageGuid = CreateDeterministicGuid(messageId);
+            int count = Math.Min(batchSize, folder.Count - offset);
+            var indexes = Enumerable.Range(offset, count).ToList();
             
-            if (messageGuid == emailId)
+            // Fetch headers in batch using IMAP FETCH command
+            var headersList = await folder.FetchAsync(indexes, MessageSummaryItems.Envelope, ct);
+            
+            foreach (var summary in headersList)
             {
-                return message;
+                var messageId = summary.Envelope.MessageId ?? string.Empty;
+                var messageGuid = CreateDeterministicGuid(messageId);
+                
+                if (messageGuid == emailId)
+                {
+                    // Found the match, fetch the full message
+                    return await folder.GetMessageAsync(summary.Index, ct);
+                }
             }
         }
         
         return null;
     }
 
+    /// <summary>
+    /// Finds a message index by its GUID (derived from Message-ID) using batch IMAP FETCH.
+    /// Uses IMAP FETCH with MessageSummaryItems.Envelope to retrieve only headers in batches,
+    /// enabling efficient message flag operations (mark read, delete) without fetching full content.
+    /// </summary>
     private static async Task<int?> FindMessageIndexByIdAsync(IMailFolder folder, Guid emailId, CancellationToken ct)
     {
         await folder.OpenAsync(FolderAccess.ReadWrite, ct);
         
-        // Search through all messages to find matching Message-ID
-        for (int i = 0; i < folder.Count; i++)
+        if (folder.Count == 0)
+            return null;
+        
+        // Batch fetch headers for better performance
+        // Process in chunks to avoid overwhelming the server
+        const int batchSize = 100;
+        
+        for (int offset = 0; offset < folder.Count; offset += batchSize)
         {
-            var message = await folder.GetMessageAsync(i, ct);
-            var messageId = message.MessageId ?? string.Empty;
-            var messageGuid = CreateDeterministicGuid(messageId);
+            int count = Math.Min(batchSize, folder.Count - offset);
+            var indexes = Enumerable.Range(offset, count).ToList();
             
-            if (messageGuid == emailId)
+            // Fetch headers in batch using IMAP FETCH command
+            var headersList = await folder.FetchAsync(indexes, MessageSummaryItems.Envelope, ct);
+            
+            foreach (var summary in headersList)
             {
-                return i;
+                var messageId = summary.Envelope.MessageId ?? string.Empty;
+                var messageGuid = CreateDeterministicGuid(messageId);
+                
+                if (messageGuid == emailId)
+                {
+                    return summary.Index;
+                }
             }
         }
         
