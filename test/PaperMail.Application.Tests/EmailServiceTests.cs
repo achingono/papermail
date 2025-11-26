@@ -212,4 +212,173 @@ public class EmailServiceTests
         // Assert
         _repositoryMock.Verify(r => r.GetInboxAsync("user123", 2, 25, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task SendEmailAsync_ValidRequest_ReturnsEmailId()
+    {
+        // Arrange
+        var request = new ComposeEmailRequest
+        {
+            To = new List<string> { "recipient@example.com" },
+            Subject = "Email Subject",
+            BodyPlain = "Email content"
+        };
+
+        _repositoryMock
+            .Setup(r => r.SendEmailAsync(It.IsAny<Email>(), "sender@example.com", It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _service.SendEmailAsync(request, "sender@example.com");
+
+        // Assert
+        result.Should().NotBeEmpty();
+        _repositoryMock.Verify(r => r.SendEmailAsync(It.Is<Email>(e => 
+            e.Subject == "Email Subject" && 
+            e.From.Value == "sender@example.com"
+        ), "sender@example.com", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_NullRequest_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        var act = async () => await _service.SendEmailAsync(null!, "sender@example.com");
+        await act.Should().ThrowAsync<ArgumentNullException>()
+            .WithParameterName("request");
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_EmptyUserId_ThrowsArgumentException()
+    {
+        // Arrange
+        var request = new ComposeEmailRequest
+        {
+            To = new List<string> { "recipient@example.com" },
+            Subject = "Subject",
+            BodyPlain = "Body"
+        };
+
+        // Act & Assert
+        var act = async () => await _service.SendEmailAsync(request, "");
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("userId");
+    }
+
+    [Fact]
+    public async Task DeleteEmailAsync_ValidId_CallsRepository()
+    {
+        // Arrange
+        var emailId = Guid.NewGuid();
+        _repositoryMock
+            .Setup(r => r.DeleteAsync(emailId, "user123", It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _service.DeleteEmailAsync(emailId, "user123");
+
+        // Assert
+        _repositoryMock.Verify(r => r.DeleteAsync(emailId, "user123", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetInboxAsync_WithDefaultParameters_Uses50PageSize()
+    {
+        // Arrange
+        _repositoryMock
+            .Setup(r => r.GetInboxAsync("user123", 0, 50, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<Email>());
+
+        // Act
+        await _service.GetInboxAsync("user123");
+
+        // Assert
+        _repositoryMock.Verify(r => r.GetInboxAsync("user123", 0, 50, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetInboxAsync_NullUserId_ThrowsArgumentException()
+    {
+        // Act & Assert
+        var act = async () => await _service.GetInboxAsync(null!, 0, 50);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("userId");
+    }
+
+    [Fact]
+    public async Task GetInboxAsync_WhitespaceUserId_ThrowsArgumentException()
+    {
+        // Act & Assert
+        var act = async () => await _service.GetInboxAsync("   ", 0, 50);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("userId");
+    }
+
+    [Fact]
+    public async Task SaveDraftAsync_NullUserId_ThrowsArgumentException()
+    {
+        // Arrange
+        var request = new ComposeEmailRequest
+        {
+            To = new List<string> { "recipient@example.com" },
+            Subject = "Subject",
+            BodyPlain = "Body"
+        };
+
+        // Act & Assert
+        var act = async () => await _service.SaveDraftAsync(request, null!);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("userId");
+    }
+
+    [Fact]
+    public async Task SaveDraftAsync_WhitespaceUserId_ThrowsArgumentException()
+    {
+        // Arrange
+        var request = new ComposeEmailRequest
+        {
+            To = new List<string> { "recipient@example.com" },
+            Subject = "Subject",
+            BodyPlain = "Body"
+        };
+
+        // Act & Assert
+        var act = async () => await _service.SaveDraftAsync(request, "  ");
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("userId");
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_NullUserId_ThrowsArgumentException()
+    {
+        // Arrange
+        var request = new ComposeEmailRequest
+        {
+            To = new List<string> { "recipient@example.com" },
+            Subject = "Subject",
+            BodyPlain = "Body"
+        };
+
+        // Act & Assert
+        var act = async () => await _service.SendEmailAsync(request, null!);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("userId");
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_WhitespaceUserId_ThrowsArgumentException()
+    {
+        // Arrange
+        var request = new ComposeEmailRequest
+        {
+            To = new List<string> { "recipient@example.com" },
+            Subject = "Subject",
+            BodyPlain = "Body"
+        };
+
+        // Act & Assert
+        var act = async () => await _service.SendEmailAsync(request, "  ");
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("userId");
+    }
 }

@@ -342,4 +342,251 @@ public class MailKitWrapperTests
         // Assert
         result.ReceivedAt.Should().Be(expectedDate);
     }
+
+    [Fact]
+    public async Task GetEmailByIdAsync_NullSettings_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        var act = async () => await _wrapper.GetEmailByIdAsync(null!, "token", Guid.NewGuid());
+        await act.Should().ThrowAsync<ArgumentNullException>()
+            .WithParameterName("settings");
+    }
+
+    [Fact]
+    public async Task GetEmailByIdAsync_EmptyAccessToken_ThrowsArgumentException()
+    {
+        // Act & Assert
+        var act = async () => await _wrapper.GetEmailByIdAsync(_settings, "", Guid.NewGuid());
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("accessToken");
+    }
+
+    [Fact]
+    public async Task GetEmailByIdAsync_EmptyUsername_ThrowsArgumentException()
+    {
+        // Arrange
+        var settingsNoUser = new ImapSettings
+        {
+            Host = "imap.test.com",
+            Port = 993,
+            UseSsl = true,
+            Username = "",
+            Password = "password"
+        };
+
+        // Act & Assert
+        var act = async () => await _wrapper.GetEmailByIdAsync(settingsNoUser, "token", Guid.NewGuid());
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*username*");
+    }
+
+    [Fact]
+    public async Task MarkReadAsync_NullSettings_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        var act = async () => await _wrapper.MarkReadAsync(null!, "token", Guid.NewGuid());
+        await act.Should().ThrowAsync<ArgumentNullException>()
+            .WithParameterName("settings");
+    }
+
+    [Fact]
+    public async Task MarkReadAsync_EmptyAccessToken_ThrowsArgumentException()
+    {
+        // Act & Assert
+        var act = async () => await _wrapper.MarkReadAsync(_settings, "", Guid.NewGuid());
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("accessToken");
+    }
+
+    [Fact]
+    public async Task MarkReadAsync_EmptyUsername_ThrowsArgumentException()
+    {
+        // Arrange
+        var settingsNoUser = new ImapSettings
+        {
+            Host = "imap.test.com",
+            Port = 993,
+            UseSsl = true,
+            Username = "",
+            Password = "password"
+        };
+
+        // Act & Assert
+        var act = async () => await _wrapper.MarkReadAsync(settingsNoUser, "token", Guid.NewGuid());
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*username*");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NullSettings_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        var act = async () => await _wrapper.DeleteAsync(null!, "token", Guid.NewGuid());
+        await act.Should().ThrowAsync<ArgumentNullException>()
+            .WithParameterName("settings");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_EmptyAccessToken_ThrowsArgumentException()
+    {
+        // Act & Assert
+        var act = async () => await _wrapper.DeleteAsync(_settings, "", Guid.NewGuid());
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("accessToken");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_EmptyUsername_ThrowsArgumentException()
+    {
+        // Arrange
+        var settingsNoUser = new ImapSettings
+        {
+            Host = "imap.test.com",
+            Port = 993,
+            UseSsl = true,
+            Username = "",
+            Password = "password"
+        };
+
+        // Act & Assert
+        var act = async () => await _wrapper.DeleteAsync(settingsNoUser, "token", Guid.NewGuid());
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*username*");
+    }
+
+    [Fact]
+    public async Task SaveDraftAsync_NullSettings_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var draft = PaperMail.Core.Entities.Email.Create(
+            PaperMail.Core.Entities.EmailAddress.Create("from@example.com"),
+            new[] { PaperMail.Core.Entities.EmailAddress.Create("to@example.com") },
+            "Subject",
+            "Body",
+            null,
+            DateTimeOffset.UtcNow
+        );
+
+        // Act & Assert
+        var act = async () => await _wrapper.SaveDraftAsync(null!, "token", draft);
+        await act.Should().ThrowAsync<ArgumentNullException>()
+            .WithParameterName("settings");
+    }
+
+    [Fact]
+    public async Task SaveDraftAsync_EmptyAccessToken_ThrowsArgumentException()
+    {
+        // Arrange
+        var draft = PaperMail.Core.Entities.Email.Create(
+            PaperMail.Core.Entities.EmailAddress.Create("from@example.com"),
+            new[] { PaperMail.Core.Entities.EmailAddress.Create("to@example.com") },
+            "Subject",
+            "Body",
+            null,
+            DateTimeOffset.UtcNow
+        );
+
+        // Act & Assert
+        var act = async () => await _wrapper.SaveDraftAsync(_settings, "", draft);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("accessToken");
+    }
+
+    [Fact]
+    public async Task SaveDraftAsync_EmptyUsername_ThrowsArgumentException()
+    {
+        // Arrange
+        var settingsNoUser = new ImapSettings
+        {
+            Host = "imap.test.com",
+            Port = 993,
+            UseSsl = true,
+            Username = "",
+            Password = "password"
+        };
+
+        var draft = PaperMail.Core.Entities.Email.Create(
+            PaperMail.Core.Entities.EmailAddress.Create("from@example.com"),
+            new[] { PaperMail.Core.Entities.EmailAddress.Create("to@example.com") },
+            "Subject",
+            "Body",
+            null,
+            DateTimeOffset.UtcNow
+        );
+
+        // Act & Assert
+        var act = async () => await _wrapper.SaveDraftAsync(settingsNoUser, "token", draft);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*username*");
+    }
+
+    [Fact]
+    public async Task SaveDraftAsync_NullDraft_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        var act = async () => await _wrapper.SaveDraftAsync(_settings, "token", null!);
+        await act.Should().ThrowAsync<ArgumentNullException>()
+            .WithParameterName("draft");
+    }
+
+    [Fact]
+    public async Task FetchEmailsAsync_EmptyUsername_ThrowsArgumentException()
+    {
+        // Arrange
+        var settingsNoUser = new ImapSettings
+        {
+            Host = "imap.test.com",
+            Port = 993,
+            UseSsl = true,
+            Username = "",
+            Password = "password"
+        };
+
+        // Act & Assert
+        var act = async () => await _wrapper.FetchEmailsAsync(settingsNoUser, "token", 0, 10);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*username*");
+    }
+
+    [Fact]
+    public void MapToEmail_HtmlBody_ExtractsCorrectly()
+    {
+        // Arrange
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("John", "john@example.com"));
+        message.To.Add(new MailboxAddress("Jane", "jane@example.com"));
+        message.Subject = "Test";
+        
+        var builder = new MimeKit.BodyBuilder
+        {
+            HtmlBody = "<html><body><p>HTML content</p></body></html>",
+            TextBody = "Plain text content"
+        };
+        message.Body = builder.ToMessageBody();
+
+        // Act
+        var result = MailKitWrapper.MapToEmail(message);
+
+        // Assert
+        result.BodyHtml.Should().Contain("HTML content");
+        result.BodyPlain.Should().Be("Plain text content");
+    }
+
+    [Fact]
+    public void MapToEmail_OnlyPlainText_ShouldWork()
+    {
+        // Arrange
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("John", "john@example.com"));
+        message.To.Add(new MailboxAddress("Jane", "jane@example.com"));
+        message.Subject = "Test";
+        message.Body = new TextPart("plain") { Text = "Just plain text" };
+
+        // Act
+        var result = MailKitWrapper.MapToEmail(message);
+
+        // Assert
+        result.BodyPlain.Should().Be("Just plain text");
+        result.BodyHtml.Should().BeNull();
+    }
 }
