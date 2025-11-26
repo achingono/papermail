@@ -77,6 +77,8 @@ public class OAuthService : IOAuthService
             $"&scope={Uri.EscapeDataString(scopes)}" +
             $"&code_challenge={codeChallenge}" +
             $"&code_challenge_method=S256" +
+            $"&access_type=offline" +
+            $"&prompt=consent" +
             $"&state={Uri.EscapeDataString(state)}"; // Ensure state is URL encoded
 
         return (authUrl, codeVerifier, state);
