@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{32021F74-EF3F-45ED-AB40-34F41AC3D9C8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Papermail.Core", "src\Papermail.Core\Papermail.Core.csproj", "{691E4EC2-0958-4E14-B107-680EE8DE53A2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Papermail.Data", "src\Papermail.Data\Papermail.Data.csproj", "{A0A844F0-34BA-4DE5-B364-ABE93BCF723A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Papermail.Web", "src\Papermail.Web\Papermail.Web.csproj", "{9129522D-B77D-435C-95EF-5696302F3A25}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{691E4EC2-0958-4E14-B107-680EE8DE53A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{691E4EC2-0958-4E14-B107-680EE8DE53A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{691E4EC2-0958-4E14-B107-680EE8DE53A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{691E4EC2-0958-4E14-B107-680EE8DE53A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0A844F0-34BA-4DE5-B364-ABE93BCF723A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0A844F0-34BA-4DE5-B364-ABE93BCF723A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0A844F0-34BA-4DE5-B364-ABE93BCF723A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0A844F0-34BA-4DE5-B364-ABE93BCF723A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9129522D-B77D-435C-95EF-5696302F3A25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9129522D-B77D-435C-95EF-5696302F3A25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9129522D-B77D-435C-95EF-5696302F3A25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9129522D-B77D-435C-95EF-5696302F3A25}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{691E4EC2-0958-4E14-B107-680EE8DE53A2} = {32021F74-EF3F-45ED-AB40-34F41AC3D9C8}
+		{A0A844F0-34BA-4DE5-B364-ABE93BCF723A} = {32021F74-EF3F-45ED-AB40-34F41AC3D9C8}
+		{9129522D-B77D-435C-95EF-5696302F3A25} = {32021F74-EF3F-45ED-AB40-34F41AC3D9C8}
+	EndGlobalSection
+EndGlobal
