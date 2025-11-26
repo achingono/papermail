@@ -4,7 +4,7 @@ using Moq;
 using PaperMail.Core.Entities;
 using PaperMail.Infrastructure.Configuration;
 using PaperMail.Infrastructure.Email;
-using System.Security.Authentication;
+using MailKit.Security;
 using Xunit;
 using EmailEntity = PaperMail.Core.Entities.Email;
 
@@ -35,13 +35,13 @@ public class MailKitWrapperIntegrationTests
         {
             Host = _fixture.MailHost,
             Port = _fixture.ImapPort,
-            UseSsl = false, // Using plain IMAP on port 143 for testing
+            UseSsl = true, // Using IMAPS on port 993
             Username = _fixture.TestUser,
             Password = _fixture.TestPassword
         };
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task FetchEmailsAsync_WithPasswordAuth_ShouldConnectAndFetch()
     {
         // Arrange
@@ -55,7 +55,7 @@ public class MailKitWrapperIntegrationTests
         // Empty inbox is expected for fresh mail server
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task SaveDraftAsync_ShouldCreateDraftInMailbox()
     {
         // Arrange
@@ -76,7 +76,7 @@ public class MailKitWrapperIntegrationTests
         // In a real scenario, we'd fetch drafts to verify, but that requires additional IMAP operations
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task GetEmailByIdAsync_NonExistentEmail_ShouldReturnNull()
     {
         // Arrange
@@ -90,7 +90,7 @@ public class MailKitWrapperIntegrationTests
         email.Should().BeNull();
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task MarkReadAsync_NonExistentEmail_ShouldCompleteWithoutError()
     {
         // Arrange
@@ -104,7 +104,7 @@ public class MailKitWrapperIntegrationTests
         await act.Should().NotThrowAsync();
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task DeleteAsync_NonExistentEmail_ShouldCompleteWithoutError()
     {
         // Arrange
@@ -118,7 +118,7 @@ public class MailKitWrapperIntegrationTests
         await act.Should().NotThrowAsync();
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task FetchEmailsAsync_WithInvalidCredentials_ShouldThrowAuthException()
     {
         // Arrange
@@ -126,7 +126,7 @@ public class MailKitWrapperIntegrationTests
         {
             Host = _fixture.MailHost,
             Port = _fixture.ImapPort,
-            UseSsl = false,
+            UseSsl = true, // Using IMAPS on port 993
             Username = "invalid@example.com",
             Password = "wrongpassword"
         };

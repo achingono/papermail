@@ -19,7 +19,7 @@ public class EmailWorkflowUITests
         _playwright = new PlaywrightFixture();
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task ComposeAndSendEmail_ShouldSucceed()
     {
         await _playwright.InitializeAsync();
@@ -60,7 +60,7 @@ public class EmailWorkflowUITests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task Inbox_ShouldLoadAndDisplayEmails()
     {
         await _playwright.InitializeAsync();
@@ -92,7 +92,7 @@ public class EmailWorkflowUITests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task ComposeEmail_RequiredFieldValidation_ShouldWork()
     {
         await _playwright.InitializeAsync();
@@ -123,7 +123,7 @@ public class EmailWorkflowUITests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task ComposeEmail_WithSubject_ShouldPreserveInput()
     {
         await _playwright.InitializeAsync();
@@ -151,7 +151,7 @@ public class EmailWorkflowUITests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task Navigation_BetweenInboxAndCompose_ShouldWork()
     {
         await _playwright.InitializeAsync();
@@ -181,7 +181,7 @@ public class EmailWorkflowUITests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task ComposeEmail_KeyboardShortcut_C_ShouldOpenCompose()
     {
         await _playwright.InitializeAsync();
@@ -209,7 +209,7 @@ public class EmailWorkflowUITests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task SendEmail_ToMultipleRecipients_ShouldSucceed()
     {
         await _playwright.InitializeAsync();

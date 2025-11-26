@@ -21,8 +21,8 @@ public class DockerComposeFixture : IAsyncLifetime
     }
 
     public string MailHost => "localhost";
-    public int ImapPort => 143;
-    public int SmtpPort => 587;
+    public int ImapPort => 993;  // IMAPS (IMAP with SSL)
+    public int SmtpPort => 587;  // SMTP with STARTTLS
     public string TestUser => "admin@papermail.local";
     public string TestPassword => "P@ssw0rd";
 
@@ -35,17 +35,29 @@ public class DockerComposeFixture : IAsyncLifetime
             throw new InvalidOperationException($"docker-compose.yml not found at {composeFilePath}");
         }
 
+        Console.WriteLine("Starting docker-compose mail service for integration tests...");
+        
         // Start only the mail service for integration tests
         await RunDockerComposeAsync("up", "-d", "mail");
         
-        // Wait for mail server to be ready (max 30 seconds)
-        await WaitForMailServerAsync(TimeSpan.FromSeconds(30));
+        Console.WriteLine("Waiting for mail server to be ready...");
+        
+        // Wait for both SMTP and IMAP ports to be ready
+        // docker-mailserver can take 60-90 seconds to fully initialize
+        // We need to wait for the port AND verify the service responds correctly
+        await WaitForSmtpReadyAsync(TimeSpan.FromSeconds(120));
+        // For IMAPS (993), just check port availability since it requires SSL handshake
+        await WaitForPortAsync(ImapPort, "IMAPS", TimeSpan.FromSeconds(120));
+        
+        Console.WriteLine("Mail server is ready for integration tests");
     }
 
     public async Task DisposeAsync()
     {
+        Console.WriteLine("Stopping docker-compose mail service...");
         // Stop and remove containers
         await RunDockerComposeAsync("down", "-v");
+        Console.WriteLine("Docker cleanup complete");
     }
 
     private async Task RunDockerComposeAsync(params string[] args)
@@ -84,28 +96,88 @@ public class DockerComposeFixture : IAsyncLifetime
         }
     }
 
-    private async Task WaitForMailServerAsync(TimeSpan timeout)
+    private async Task WaitForSmtpReadyAsync(TimeSpan timeout)
     {
         var deadline = DateTime.UtcNow.Add(timeout);
+        var attempt = 0;
+        var pollInterval = TimeSpan.FromSeconds(3);
+        
+        Console.WriteLine($"Waiting for SMTP service on port {SmtpPort} (timeout: {timeout.TotalSeconds}s)...");
         
         while (DateTime.UtcNow < deadline)
         {
+            attempt++;
             try
             {
                 using var client = new System.Net.Sockets.TcpClient();
                 await client.ConnectAsync(MailHost, SmtpPort);
                 
-                // If connection succeeds, server is ready
+                // Read the SMTP greeting to verify service is actually ready
+                using var stream = client.GetStream();
+                using var reader = new System.IO.StreamReader(stream);
+                var greeting = await reader.ReadLineAsync();
+                
+                if (!string.IsNullOrEmpty(greeting) && greeting.StartsWith("220"))
+                {
+                    Console.WriteLine($"✓ SMTP service is ready (attempt {attempt}): {greeting}");
+                    return;
+                }
+            }
+            catch
+            {
+                // Log every 10th attempt
+                if (attempt % 10 == 0)
+                {
+                    Console.WriteLine($"  Still waiting for SMTP... (attempt {attempt}, {(deadline - DateTime.UtcNow).TotalSeconds:F0}s remaining)");
+                }
+            }
+            
+            var remainingTime = deadline - DateTime.UtcNow;
+            if (remainingTime > TimeSpan.Zero)
+            {
+                await Task.Delay(remainingTime < pollInterval ? remainingTime : pollInterval);
+            }
+        }
+
+        throw new TimeoutException(
+            $"SMTP service did not become ready within {timeout.TotalSeconds} seconds after {attempt} attempts");
+    }
+
+    private async Task WaitForPortAsync(int port, string serviceName, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow.Add(timeout);
+        var attempt = 0;
+        var pollInterval = TimeSpan.FromSeconds(3);
+        
+        Console.WriteLine($"Waiting for {serviceName} on port {port} (timeout: {timeout.TotalSeconds}s)...");
+        
+        while (DateTime.UtcNow < deadline)
+        {
+            attempt++;
+            try
+            {
+                using var client = new System.Net.Sockets.TcpClient();
+                await client.ConnectAsync(MailHost, port);
+                Console.WriteLine($"✓ {serviceName} port {port} is ready (attempt {attempt})");
                 return;
             }
             catch
             {
-                // Server not ready yet, wait and retry
-                await Task.Delay(1000);
+                if (attempt % 10 == 0)
+                {
+                    Console.WriteLine($"  Still waiting for {serviceName}... (attempt {attempt}, {(deadline - DateTime.UtcNow).TotalSeconds:F0}s remaining)");
+                }
+            }
+            
+            var remainingTime = deadline - DateTime.UtcNow;
+            if (remainingTime > TimeSpan.Zero)
+            {
+                await Task.Delay(remainingTime < pollInterval ? remainingTime : pollInterval);
             }
         }
 
-        throw new TimeoutException("Mail server did not start within the timeout period");
+        throw new TimeoutException(
+            $"{serviceName} port {port} did not become available within {timeout.TotalSeconds} seconds after {attempt} attempts");
     }
 }
 

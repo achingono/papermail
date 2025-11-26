@@ -19,7 +19,7 @@ public class AuthenticationFlowTests
         _playwright = new PlaywrightFixture();
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task Login_WithValidCredentials_ShouldSucceed()
     {
         await _playwright.InitializeAsync();
@@ -56,7 +56,7 @@ public class AuthenticationFlowTests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task Login_WithInvalidCredentials_ShouldFail()
     {
         await _playwright.InitializeAsync();
@@ -95,7 +95,7 @@ public class AuthenticationFlowTests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task Login_WithRegularUser_ShouldSucceed()
     {
         await _playwright.InitializeAsync();
@@ -132,7 +132,7 @@ public class AuthenticationFlowTests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task AuthenticationFlow_ShouldIncludeOAuthCallback()
     {
         await _playwright.InitializeAsync();
@@ -172,7 +172,7 @@ public class AuthenticationFlowTests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task Logout_ShouldClearSessionAndRedirectToLogin()
     {
         await _playwright.InitializeAsync();
@@ -208,7 +208,7 @@ public class AuthenticationFlowTests
         }
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task UnauthenticatedAccess_ShouldRedirectToLogin()
     {
         await _playwright.InitializeAsync();

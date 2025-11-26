@@ -17,7 +17,7 @@ public class DockerEnvironmentTests
         _fixture = fixture;
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task ProxyService_ShouldBeAccessible()
     {
         using var handler = new HttpClientHandler
@@ -32,7 +32,7 @@ public class DockerEnvironmentTests
             $"Expected success or redirect, got {response.StatusCode}");
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task OidcService_ShouldBeAccessible()
     {
         using var handler = new HttpClientHandler
@@ -48,7 +48,7 @@ public class DockerEnvironmentTests
             $"OIDC discovery endpoint should be accessible, got {response.StatusCode}");
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task ClientService_ShouldRedirectToLogin()
     {
         using var handler = new HttpClientHandler
@@ -66,7 +66,7 @@ public class DockerEnvironmentTests
             $"Expected redirect to login or OK, got {response.StatusCode}");
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task MailServer_SmtpPort_ShouldBeListening()
     {
         using var client = new System.Net.Sockets.TcpClient();
@@ -75,7 +75,7 @@ public class DockerEnvironmentTests
         Assert.True(client.Connected, "SMTP port should be accessible");
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task MailServer_ImapPort_ShouldBeListening()
     {
         using var client = new System.Net.Sockets.TcpClient();
@@ -84,7 +84,7 @@ public class DockerEnvironmentTests
         Assert.True(client.Connected, "IMAP port should be accessible");
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task OidcConfiguration_ShouldContainExpectedEndpoints()
     {
         using var handler = new HttpClientHandler
@@ -101,7 +101,7 @@ public class DockerEnvironmentTests
         Assert.Contains("userinfo_endpoint", content);
     }
 
-    [Fact(Skip = "Requires docker-compose environment")]
+    [Fact]
     public async Task AllServices_ShouldBeHealthy()
     {
         var healthChecks = new List<Task<bool>>

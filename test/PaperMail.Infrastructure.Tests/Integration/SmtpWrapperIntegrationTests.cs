@@ -4,7 +4,7 @@ using Moq;
 using PaperMail.Core.Entities;
 using PaperMail.Infrastructure.Configuration;
 using PaperMail.Infrastructure.Email;
-using System.Security.Authentication;
+using MailKit.Security;
 using Xunit;
 using EmailEntity = PaperMail.Core.Entities.Email;
 
@@ -41,7 +41,7 @@ public class SmtpWrapperIntegrationTests
         };
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task SendEmailAsync_WithPasswordAuth_ShouldSendEmail()
     {
         // Arrange
@@ -62,7 +62,7 @@ public class SmtpWrapperIntegrationTests
         await act.Should().NotThrowAsync();
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task SendEmailAsync_MultipleRecipients_ShouldSendToAll()
     {
         // Arrange
@@ -87,7 +87,7 @@ public class SmtpWrapperIntegrationTests
         await act.Should().NotThrowAsync();
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task SendEmailAsync_WithAttachments_ShouldIncludeAttachments()
     {
         // Arrange
@@ -115,7 +115,7 @@ public class SmtpWrapperIntegrationTests
         await act.Should().NotThrowAsync();
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task SendEmailAsync_WithInvalidCredentials_ShouldThrowAuthException()
     {
         // Arrange
@@ -144,7 +144,7 @@ public class SmtpWrapperIntegrationTests
         await act.Should().ThrowAsync<AuthenticationException>();
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task SendEmailAsync_PlainTextOnly_ShouldSend()
     {
         // Arrange

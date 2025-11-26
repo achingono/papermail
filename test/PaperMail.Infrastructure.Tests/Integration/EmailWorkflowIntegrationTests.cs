@@ -45,13 +45,13 @@ public class EmailWorkflowIntegrationTests
         {
             Host = _fixture.MailHost,
             Port = _fixture.ImapPort,
-            UseSsl = false,
+            UseSsl = true, // Using IMAPS on port 993
             Username = _fixture.TestUser,
             Password = _fixture.TestPassword
         };
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task SendEmail_ThenFetch_ShouldRetrieveEmail()
     {
         // Arrange
@@ -83,7 +83,7 @@ public class EmailWorkflowIntegrationTests
         receivedEmail.BodyPlain.Should().Contain("end-to-end test");
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task SaveDraft_ThenFetchFromDrafts_ShouldRetrieveDraft()
     {
         // Arrange
@@ -110,7 +110,7 @@ public class EmailWorkflowIntegrationTests
         // A complete test would require additional MailKitWrapper methods to list folders
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task SendEmailWithAttachments_ThenVerify_ShouldPreserveAttachments()
     {
         // Arrange
@@ -149,7 +149,7 @@ public class EmailWorkflowIntegrationTests
         receivedEmail.Attachments.Should().Contain(a => a.FileName == "image.jpg");
     }
 
-    [Fact(Skip = "Requires docker-compose mail server to be running")]
+    [Fact]
     public async Task FetchEmails_WithPagination_ShouldReturnCorrectPage()
     {
         // Arrange
