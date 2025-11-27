@@ -5,6 +5,11 @@ using Papermail.Web.Security;
 using System.Security.Principal;
 using Microsoft.EntityFrameworkCore;
 using Papermail.Data;
+using Papermail.Data.Services;
+using Papermail.Web.Services;
+using Papermail.Data.Repositories;
+using Papermail.Web.Clients;
+using Papermail.Data.Clients;
 
 // Create the web application builder
 var builder = WebApplication.CreateBuilder(args);
@@ -22,8 +27,15 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.TryAddSingleton<IPrincipalAccessor, PrincipalAccessor>();
 builder.Services.TryAddScoped<IPrincipal>(provider => provider.GetRequiredService<IPrincipalAccessor>().Principal!);
-//builder.Services.TryAddSingleton<IHostNameAccessor, HostNameAccessor>();
-builder.Services.AddDbContext<Context>(options =>
+builder.Services.TryAddScoped<IAccountService, AccountService>();
+builder.Services.TryAddScoped<IEmailService, EmailService>();
+builder.Services.TryAddScoped<ITokenService, TokenService>();
+builder.Services.TryAddScoped<IEmailRepository, EmailRepository>();
+builder.Services.TryAddScoped<IImapClient, ImapClient>();
+builder.Services.TryAddScoped<ISmtpClient, SmtpClient>();
+
+builder.Services.AddDataProtection();
+builder.Services.AddDbContext<DataContext>(options =>
 {
     var connectionStringName = "Sql";
     var connectionString = builder.Configuration.GetConnectionString(connectionStringName);
@@ -41,11 +53,13 @@ builder.Services.AddDbContext<Context>(options =>
         options.EnableDetailedErrors(true)
                 .EnableSensitiveDataLogging(true);
 });
-builder.Services.AddScoped<IUserLocator, UserLocator>();
 
 // Enables Application Insights telemetry collection.
-builder.Services.AddApplicationInsightsTelemetry();
-builder.Services.AddServiceProfiler();
+if (!(builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+    builder.Services.AddServiceProfiler();
+}
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 
@@ -56,7 +70,7 @@ builder.Services.AddHealthChecks()
                 .AddCheck("self", () => HealthCheckResult.Healthy())
                 .AddSqlServer(builder.Configuration.GetConnectionString("Sql")!,
                     name: "SqlServer")
-                .AddDbContextCheck<Context>()
+                .AddDbContextCheck<DataContext>()
                 .AddRedis(builder.Configuration.GetConnectionString("Redis")!, name: "Redis");
 
 var app = builder.Build();
@@ -67,6 +81,7 @@ app.UseForwardedHeaders();
 // Note: UseHttpsRedirection comes after UseForwardedHeaders
 // so it can see the X-Forwarded-Proto header
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 // Note: UseAuthentication must come before UseAuthorization
 app.UseAuthentication();
@@ -74,5 +89,31 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapRazorPages();  // Handles /oauth/callback implicitly
+app.MapHealthChecks("/healthz");
 
+if (!app.Environment.IsProduction())
+{
+    using (var scope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope())
+    {
+        try
+        {
+            var context = scope!.ServiceProvider.GetRequiredService<DataContext>();
+            //var seeder = scope.ServiceProvider.GetService<IDbContextSeeder>();
+
+            await context.Database.EnsureCreatedAsync();
+            if (context.Database.IsRelational())
+            {
+                await context.Database.MigrateAsync();
+            }
+
+            //Task.Run(() => seeder?.SeedAsync()).Wait();
+        }
+        catch (Exception ex)
+        {
+            // Log the exception but don't crash the application
+            var logger = scope!.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning(ex, "Database migration failed, but application will continue");
+        }
+    }
+}
 app.Run();

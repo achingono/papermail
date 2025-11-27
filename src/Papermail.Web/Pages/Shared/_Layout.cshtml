@@ -1,40 +1,31 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="PaperMail - Email client optimized for E-Ink devices" />
     <title>@ViewData["Title"] - PaperMail</title>
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="/icon.svg" />
+    <link rel="stylesheet" href="~/css/styles.css" asp-append-version="true" />
 </head>
-<body class="min-h-screen flex flex-col">
-    <header class="border-b-2 border-eink-black no-print">
-        <nav class="container">
-            <div class="flex items-center justify-between py-4">
-                <a href="/inbox" class="text-2xl font-bold no-underline hover:underline">PaperMail</a>
-                <div class="flex gap-4">
-                    <a href="/inbox" class="font-semibold">Inbox</a>
-                    <a href="/compose" class="font-semibold">Compose</a>
-                    <a href="/oauth/logout" class="font-semibold">Logout</a>
-                </div>
-            </div>
-        </nav>
-    </header>
 
-    <main role="main" class="flex-1">
+<body class="min-h-screen flex flex-col">
+    <main role="main" class="flex-1 p-6">
+        @await Html.PartialAsync("_Header")
         @RenderBody()
     </main>
 
     <footer class="border-t-2 border-eink-black mt-8 no-print">
         <div class="container py-4 text-center text-sm text-eink-gray">
-            <p>&copy; 2025 PaperMail - Optimized for E-Ink</p>
+            <p>&copy; @DateTime.Today.Year PaperMail - Optimized for E-Ink</p>
             <p class="mt-2">
                 <kbd class="px-2 py-1 border border-eink-gray">?</kbd> for keyboard shortcuts
             </p>
         </div>
     </footer>
 
-    <script src="~/js/app.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
+
 </html>

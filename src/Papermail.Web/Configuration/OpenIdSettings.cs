@@ -24,4 +24,9 @@ public class OpenIdSettings
     /// Gets or sets a value indicating whether HTTPS is required for metadata retrieval.
     /// </summary>
     public bool RequireHttpsMetadata { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the scopes to request during authentication.
+    /// </summary>
+    public List<string> Scopes { get; set; } = new() { "openid", "profile", "email", "offline_access" };
 }

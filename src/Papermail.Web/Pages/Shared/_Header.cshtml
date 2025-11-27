@@ -1,0 +1,22 @@
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+    <header class="border-b-2 border-eink-black no-print">
+        <nav class=" py-4 px-6">
+            <div class="flex items-center justify-between">
+                <a href="/" class="text-2xl font-bold no-underline hover:underline">
+                    <img src="/logo.png" alt="PaperMail Logo" class="h-8 inline-block align-middle" />
+                </a>
+                <div class="flex gap-4 text-right">
+                @if (User.Identity?.IsAuthenticated ?? false)
+                {
+                    <a href="/inbox" class="font-semibold">Inbox</a>
+                    <a href="/compose" class="font-semibold">Compose</a>
+                    <a href="/logout" class="font-semibold">Logout</a>
+                    <a href="/profile" class="font-semibold">@User.Identity.Name</a>
+                }
+                else {
+                    <a href="/auth/@OpenIdConnectDefaults.AuthenticationScheme" class="font-semibold">Login</a>
+                }
+                </div>
+            </div>
+        </nav>
+    </header>

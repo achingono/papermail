@@ -1,15 +1,7 @@
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Authentication.OAuth;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Threading.Tasks;
 using System.Security.Claims;
-using System.Linq;
 using Papermail.Web.Configuration;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
@@ -31,10 +23,9 @@ public static class IServiceCollectionExtensions
 
         ArgumentNullException.ThrowIfNull(environment);
 
-        var fileSettings = services.Configure<FileSettings>(configuration, "Files");
-        var identitySettings = services.Configure<IdentitySettings>(configuration, "Identity");
+        var identitySettings = services.Configure<OpenIdSettings>(configuration, "OpenId");
 
-        services.AddAuthentication(environment, identitySettings, fileSettings);
+        services.AddAuthentication(environment, identitySettings);
     }
 
     /// <summary>
@@ -48,158 +39,51 @@ public static class IServiceCollectionExtensions
     public static IServiceCollection AddAuthentication(
         this IServiceCollection services,
         IWebHostEnvironment environment,
-        IdentitySettings settings,
-        FileSettings fileSettings)
+        OpenIdSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
         var strictValidation = environment.IsProduction() || environment.IsStaging();
 
-        services.AddCors();
         var authBuilder = services.AddAuthentication(options =>
         {
             // Set Cookie as default for browser-based auth (sign-in, sign-out)
             options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
-            // Set JWT Bearer as the default challenge for API requests
+            // Set OpenID Connect as the default challenge for API and Page requests
             // This ensures API requests without auth get 401 instead of redirects
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-
-            // Note: Individual endpoints should specify [Authorize(AuthenticationSchemes = "Bearer,Cookies")]
+            // Note: Individual endpoints should specify [Authorize(AuthenticationSchemes = "OpenIdConnect,Cookies")]
             // to support both authentication methods
+            options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
         })
-        .AddJwtBearer(x =>
-        {
-            x.RequireHttpsMetadata = strictValidation;
-            x.TokenValidationParameters.ValidateIssuer = strictValidation;
-            x.TokenValidationParameters.ValidateAudience = strictValidation;
-            x.TokenValidationParameters.ValidateLifetime = strictValidation;
-            x.TokenValidationParameters.ValidateIssuerSigningKey = strictValidation;
-            x.TokenValidationParameters.ValidIssuer = settings.Token.Issuer;
-            x.TokenValidationParameters.ValidAudience = settings.Token.Audience;
-            x.TokenValidationParameters.IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(settings.Token.SecretKey));
-            // x.TokenValidationParameters.SignatureValidator = (token, parameters) =>
-            // {
-            //     JsonWebToken jwtToken = new JsonWebToken(token);
-            //     return jwtToken;
-            // };
-            x.SaveToken = true;
-
-            // Add detailed logging for JWT authentication failures
-            x.Events = new JwtBearerEvents
+        .AddCookie()
+        .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
             {
-                OnMessageReceived = context =>
-                {
-                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-                    var authHeader = context.Request.Headers.Authorization.ToString();
-                    logger.LogInformation("JWT OnMessageReceived: Authorization Header = '{AuthHeader}'",
-                        string.IsNullOrEmpty(authHeader) ? "MISSING" : authHeader);
-                    return Task.CompletedTask;
-                },
-                OnAuthenticationFailed = context =>
-                {
-                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-                    logger.LogWarning("JWT Authentication failed: {Exception}", context.Exception.Message);
-                    var authHeader = context.Request.Headers.Authorization.ToString();
-                    logger.LogDebug("JWT Token: {Token}", string.IsNullOrEmpty(authHeader) ? "None" : authHeader);
-                    return Task.CompletedTask;
-                },
-                OnTokenValidated = context =>
-                {
-                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-                    logger.LogInformation("JWT Token validated successfully for user: {User}",
-                        context.Principal?.Identity?.Name ?? "Unknown");
-                    return Task.CompletedTask;
-                },
-                OnChallenge = context =>
-                {
-                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-                    logger.LogWarning("JWT Challenge triggered. Error: {Error}, ErrorDescription: {ErrorDescription}, AuthFailure: {AuthFailure}",
-                        context.Error, context.ErrorDescription, context.AuthenticateFailure?.Message ?? "None");
-
-                    // Don't allow cookie redirect for requests with Authorization header or Accept: application/json
-                    if (context.Request.Headers.ContainsKey("Authorization") ||
-                        context.Request.Headers.Accept.Any(h => h?.Contains("application/json") == true))
-                    {
-                        // Suppress the default challenge behavior (no redirect)
-                        context.HandleResponse();
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                        context.Response.Headers.Append("WWW-Authenticate", "Bearer");
-                    }
-                    return Task.CompletedTask;
-                }
-            };
-        })
-        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
-        {
-            // Configure cookie settings to prevent correlation failures
-            options.Cookie.Name = "Famorize.Auth";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = environment.IsProduction() ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
-            options.ExpireTimeSpan = TimeSpan.FromHours(24);
-            options.SlidingExpiration = true;
-
-            // Configure login and logout paths
-            options.LoginPath = "/login";
-            options.LogoutPath = "/signout";
-            options.AccessDeniedPath = "/access-denied";
-
-            // Customize events to prevent redirects for API requests
-            options.Events.OnRedirectToLogin = context =>
-            {
-                // If this is an API request (has Accept: application/json or Authorization header),
-                // return 401 instead of redirecting
-                if (context.Request.Path.StartsWithSegments("/api") ||
-                    context.Request.Headers.Accept.Any(h => h?.Contains("application/json") == true) ||
-                    context.Request.Headers.ContainsKey("Authorization"))
-                {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    return Task.CompletedTask;
-                }
-
-                // Otherwise, redirect to login for browser requests
-                context.Response.Redirect(context.RedirectUri);
-                return Task.CompletedTask;
-            };
-
-            options.Events.OnRedirectToAccessDenied = context =>
-            {
-                // If this is an API request, return 403 instead of redirecting
-                if (context.Request.Path.StartsWithSegments("/api") ||
-                    context.Request.Headers.Accept.Any(h => h?.Contains("application/json") == true) ||
-                    context.Request.Headers.ContainsKey("Authorization"))
-                {
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    return Task.CompletedTask;
-                }
-
-                // Otherwise, redirect to access denied page for browser requests
-                context.Response.Redirect(context.RedirectUri);
-                return Task.CompletedTask;
-            };
-        });
-
-        if (!environment.IsEnvironment("Testing"))
-        {
-            authBuilder.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
-            {
-                options.Authority = settings.OpenId.Authority;
-                options.ClientId = settings.OpenId.ClientId;
-                options.ClientSecret = settings.OpenId.ClientSecret;
-                options.RequireHttpsMetadata = settings.OpenId.RequireHttpsMetadata;
+                // 1. Authority: This tells the app where to find the B2C metadata
+                options.Authority = settings.Authority;
+                options.ClientId = settings.ClientId;
+                options.ClientSecret = settings.ClientSecret;
+                options.RequireHttpsMetadata = settings.RequireHttpsMetadata;
 
                 options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.ResponseType = OpenIdConnectResponseType.Code;
 
-                options.SaveTokens = true;
-                options.Scope.Clear();
-                options.Scope.Add("openid");
-                options.Scope.Add("profile");
-                options.Scope.Add("email");
+                options.ResponseType = "code"; // Use Authorization Code flow (standard for security)
+                options.SaveTokens = true;     // Saves the tokens in the cookie so you can read them later
 
-                options.GetClaimsFromUserInfoEndpoint = true;
+                // 3. Scopes: Define the scopes you want to request
+                foreach (var scope in settings.Scopes)
+                {
+                    options.Scope.Add(scope);
+                }
+
+                //options.GetClaimsFromUserInfoEndpoint = true;
+
+                // 4. Token Validation
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    NameClaimType = "name" // Maps the "name" claim to User.Identity.Name
+                };
 
                 // Handle claim mapping when tokens are received
                 options.Events = new OpenIdConnectEvents
@@ -258,104 +142,7 @@ public static class IServiceCollectionExtensions
                         return Task.CompletedTask;
                     }
                 };
-            })
-            .AddFacebook(fb =>
-            {
-                fb.AppId = settings.Facebook.AppId;
-                fb.AppSecret = settings.Facebook.AppSecret;
-                fb.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                fb.SaveTokens = true;
-                fb.Events = new OAuthEvents
-                {
-                    OnRemoteFailure = context =>
-                    {
-                        // Log authentication failures for debugging
-                        System.Diagnostics.Debug.WriteLine($"Facebook authentication failed: {context.Failure?.Message}");
-                        context.Response.Redirect("/");
-                        context.HandleResponse();
-                        return Task.CompletedTask;
-                    }
-                };
-            })
-            .AddGoogle(g =>
-            {
-                g.ClientId = settings.Google.ClientId;
-                g.ClientSecret = settings.Google.ClientSecret;
-                g.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                g.SaveTokens = true;
-                g.Events = new OAuthEvents
-                {
-                    OnRemoteFailure = context =>
-                    {
-                        // Log authentication failures for debugging
-                        System.Diagnostics.Debug.WriteLine($"Google authentication failed: {context.Failure?.Message}");
-                        context.Response.Redirect("/");
-                        context.HandleResponse();
-                        return Task.CompletedTask;
-                    }
-                };
-            })
-            .AddMicrosoftAccount(ms =>
-            {
-                ms.ClientId = settings.Microsoft.ClientId;
-                ms.ClientSecret = settings.Microsoft.ClientSecret;
-                ms.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                ms.SaveTokens = true;
-
-                // Ensure proper callback URL handling
-                ms.CallbackPath = "/signin-microsoft";
-
-                // Configure correlation cookie settings to prevent correlation failures
-                ms.CorrelationCookie.Name = "Microsoft.AspNetCore.Correlation";
-                ms.CorrelationCookie.HttpOnly = true;
-                ms.CorrelationCookie.SameSite = SameSiteMode.Lax;
-                ms.CorrelationCookie.SecurePolicy = environment.IsProduction() ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
-
-                ms.Events = new OAuthEvents
-                {
-                    OnCreatingTicket = async context =>
-                    {
-                        // Log successful token creation for debugging
-                        System.Diagnostics.Debug.WriteLine($"Microsoft authentication successful for user: {context.Principal?.Identity?.Name}");
-                        await Task.CompletedTask;
-                    },
-                    OnRemoteFailure = context =>
-                    {
-                        // Log authentication failures for debugging
-                        System.Diagnostics.Debug.WriteLine($"Microsoft authentication failed: {context.Failure?.Message}");
-                        context.Response.Redirect("/");
-                        context.HandleResponse();
-                        return Task.CompletedTask;
-                    }
-                };
-            })
-            .AddApple(a =>
-            {
-                a.ClientId = settings.Apple.ClientId;
-                a.KeyId = settings.Apple.KeyId;
-                a.TeamId = settings.Apple.TeamId;
-                a.UsePrivateKey(keyId =>
-                    new FileProviders.PhysicalFileProvider(fileSettings.RootPath)
-                                    .GetFileInfo($"AuthKey_{keyId}.p8")
-                );
-                a.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                a.SaveTokens = true;
-                a.Events = new AspNet.Security.OAuth.Apple.AppleAuthenticationEvents
-                {
-                    OnRemoteFailure = context =>
-                    {
-                        // Log authentication failures for debugging
-                        System.Diagnostics.Debug.WriteLine($"Apple authentication failed: {context.Failure?.Message}");
-                        context.Response.Redirect("/");
-                        context.HandleResponse();
-                        return Task.CompletedTask;
-                    }
-                };
             });
-        }
-
-        if (string.IsNullOrWhiteSpace(settings.AuthenticationType))
-            settings.AuthenticationType = JwtBearerDefaults.AuthenticationScheme;
 
         return services;
     }

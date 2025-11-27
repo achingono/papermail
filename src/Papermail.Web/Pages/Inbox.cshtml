@@ -1,0 +1,11 @@
+@page
+@{
+    ViewData["Title"] = "Inbox";
+}
+
+@await Html.PartialAsync("_Aside")
+
+<section class="px-6">
+    <h1>Inbox</h1>
+    @await Html.PartialAsync("_List")
+</section>
