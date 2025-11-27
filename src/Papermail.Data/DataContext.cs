@@ -7,20 +7,15 @@ namespace Papermail.Data;
 /// Represents the database context for the Papermail application.
 /// Provides access to database sets for users, accounts, and providers.
 /// </summary>
-public class Context : DbContext
+public class DataContext : DbContext
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="Context"/> class.
+    /// Initializes a new instance of the <see cref="DataContext"/> class.
     /// </summary>
     /// <param name="options">The options to configure the database context.</param>
-    public Context(DbContextOptions<Context> options) : base(options)
+    public DataContext(DbContextOptions<DataContext> options) : base(options)
     {
     }
-    
-    /// <summary>
-    /// Gets or sets the database set for users.
-    /// </summary>
-    public DbSet<User> Users { get; set; }
     
     /// <summary>
     /// Gets or sets the database set for email accounts.

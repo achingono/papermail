@@ -12,10 +12,8 @@ public class Account: IEntity
     [Key]
     public Guid Id { get; set; }
 
-    [Required,
-    DataType(DataType.Text),
-    StringLength(100)]
-    public string Sub { get; set; } = string.Empty; // Entra sub
+    [Required]
+    public string UserId { get; set; } = string.Empty; // Entra sub
 
     [Required]
     public Guid ProviderId { get; set; }
@@ -27,7 +25,7 @@ public class Account: IEntity
     public string RefreshToken { get; set; } = string.Empty; // encrypted
     public string? AccessToken { get; set; } // optional, short-lived
     public DateTimeOffset? ExpiresAt { get; set; }
-    public List<string> Scopes { get; set; } = new();
+    public virtual ICollection<string> Scopes { get; set; } = new List<string>();
     public string? DisplayName { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

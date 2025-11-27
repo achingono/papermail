@@ -12,7 +12,7 @@ public partial class AccountValidator : AbstractValidator<Account>
     /// </summary>
     public AccountValidator()
     {
-        RuleFor(x => x.Sub).NotEmpty().WithName("Sub");
+        RuleFor(x => x.UserId).NotEmpty().WithName("User ID");
         RuleFor(x => x.EmailAddress).NotEmpty().EmailAddress().WithName("Email Address");
         RuleFor(x => x.ProviderId).NotEmpty().WithName("Provider");
     }
