@@ -47,6 +47,7 @@ builder.Services.AddScoped<IUserLocator, UserLocator>();
 builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddServiceProfiler();
 builder.Services.AddControllers();
+builder.Services.AddRazorPages();
 
 builder.Services.AddAuthentication(builder.Configuration, builder.Environment);
 

@@ -1,0 +1,16 @@
+{
+  "name": "papermail.web",
+  "version": "1.0.0",
+  "description": "Mail client for e-ink devices",
+  "license": "ISC",
+  "author": "Alfero Chingono",
+  "scripts": {
+    "css:build": "npx @tailwindcss/cli -i ./Styles/site.css -o ./wwwroot/css/styles.css --minify"
+  },
+  "dependencies": {
+    "tailwindcss": "^4.1.17"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.17"
+  }
+}
