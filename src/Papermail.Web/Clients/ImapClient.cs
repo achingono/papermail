@@ -48,24 +48,38 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         if (settings == null)
             throw new ArgumentNullException(nameof(settings));
         if (string.IsNullOrWhiteSpace(accessToken))
-            throw new ArgumentException("Access token is required", nameof(accessToken));
+            throw new ArgumentException("Access token or password is required", nameof(accessToken));
 
         if (!client.IsConnected)
         {
-            await client.ConnectAsync(settings.Host, settings.Port, settings.UseSsl, ct);
-        }
-
-        var mechanisms = client.AuthenticationMechanisms;
-
-        if (!mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
-        {
-            throw new AuthenticationException("Server does not support XOAUTH2 authentication.");
+            // For port 143, use STARTTLS; for port 993, use SSL on connect
+            var secureSocketOptions = settings.Port == 993 
+                ? SecureSocketOptions.SslOnConnect 
+                : (settings.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
+            await client.ConnectAsync(settings.Host, settings.Port, secureSocketOptions, ct);
         }
 
         if (!client.IsAuthenticated)
         {
-            var oauth2 = new SaslMechanismOAuth2(username, accessToken);
-            await client.AuthenticateAsync(oauth2, ct);
+            var mechanisms = client.AuthenticationMechanisms;
+            
+            // Try OAuth2 first if supported
+            if (mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var oauth2 = new SaslMechanismOAuth2(username, accessToken);
+                    await client.AuthenticateAsync(oauth2, ct);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "OAuth2 authentication failed, falling back to basic auth");
+                }
+            }
+            
+            // Fall back to basic authentication
+            await client.AuthenticateAsync(username, accessToken, ct);
         }
     }
 
@@ -106,17 +120,62 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     /// <returns>A collection of email messages.</returns>
     public async Task<IEnumerable<Email>> FetchEmailsAsync(string username, string accessToken, int skip, int take, CancellationToken ct = default)
     {
+        return await FetchEmailsFromFolderAsync(username, accessToken, MailKit.SpecialFolder.All, skip, take, ct);
+    }
+
+    /// <summary>
+    /// Fetches a range of email messages from the Sent folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
+    public async Task<IEnumerable<Email>> FetchSentEmailsAsync(string username, string accessToken, int skip, int take, CancellationToken ct = default)
+    {
+        return await FetchEmailsFromFolderAsync(username, accessToken, MailKit.SpecialFolder.Sent, skip, take, ct);
+    }
+
+    /// <summary>
+    /// Fetches a range of email messages from the Drafts folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
+    public async Task<IEnumerable<Email>> FetchDraftEmailsAsync(string username, string accessToken, int skip, int take, CancellationToken ct = default)
+    {
+        return await FetchEmailsFromFolderAsync(username, accessToken, MailKit.SpecialFolder.Drafts, skip, take, ct);
+    }
+
+    /// <summary>
+    /// Fetches a range of email messages from a specific folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="specialFolder">The special folder to fetch from.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
+    private async Task<IEnumerable<Email>> FetchEmailsFromFolderAsync(string username, string accessToken, MailKit.SpecialFolder specialFolder, int skip, int take, CancellationToken ct = default)
+    {
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
 
-        var inbox = client.Inbox;
-        await inbox.OpenAsync(FolderAccess.ReadOnly, ct);
+        var folder = specialFolder == MailKit.SpecialFolder.All 
+            ? client.Inbox 
+            : client.GetFolder(specialFolder);
+        await folder.OpenAsync(FolderAccess.ReadOnly, ct);
 
         var emails = new List<Email>();
-        var messageCount = Math.Min(take, inbox.Count - skip);
+        var messageCount = Math.Min(take, folder.Count - skip);
 
         for (var i = skip; i < skip + messageCount; i++)
         {
-            var message = await inbox.GetMessageAsync(i, ct);
+            var message = await folder.GetMessageAsync(i, ct);
             emails.Add(MapToEmail(message));
         }
 
@@ -188,6 +247,30 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
 
         // Append to Drafts folder
         await drafts.AppendAsync(message, MessageFlags.Draft, ct);
+
+        await client.DisconnectAsync(true, ct);
+    }
+
+    /// <summary>
+    /// Saves an email message to the Sent folder after successful SMTP send.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="email">The email message to save to Sent folder.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    public async Task SaveToSentAsync(string username, string accessToken, Email email, CancellationToken ct = default)
+    {
+        await ConnectAndAuthenticateAsync(username, accessToken, ct);
+
+        // Get or create Sent folder
+        var sent = client.GetFolder(MailKit.SpecialFolder.Sent);
+        await sent.OpenAsync(FolderAccess.ReadWrite, ct);
+
+        // Create MimeMessage from EmailEntity
+        var message = SmtpClient.CreateMimeMessage(email);
+
+        // Append to Sent folder with Seen flag (already read)
+        await sent.AppendAsync(message, MessageFlags.Seen, ct);
 
         await client.DisconnectAsync(true, ct);
     }

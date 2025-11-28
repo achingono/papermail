@@ -1,31 +1,31 @@
+@using Papermail.Data
 <aside class="w-64 bg-slate-950 text-white flex flex-col flex-shrink-0">
 
     <div class="p-6">
         <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Signed in as</p>
-        <p class="font-bold truncate" title="user@company.com">user@company.com</p>
+        <p class="font-bold truncate" title="@(User.Email() ?? "Unknown")">@(User.Email() ?? "Unknown")</p>
     </div>
 
     <div class="h-px bg-slate-700 mx-6 mb-4"></div>
 
     <nav class="flex-1 px-4 space-y-2">
-        <a href="#"
-            class="flex justify-between items-center px-4 py-3 bg-white text-slate-950 font-bold border-l-4 border-blue-600">
+        <a href="/inbox"
+            class="flex justify-between items-center px-4 py-3 @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Inbox") == true ? "bg-white text-slate-950 font-bold border-l-4 border-blue-600" : "hover:bg-slate-800 border-l-4 border-transparent hover:border-slate-500 transition-colors")">
             <span>Inbox</span>
-            <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">3</span>
         </a>
 
-        <a href="#"
-            class="block px-4 py-3 hover:bg-slate-800 border-l-4 border-transparent hover:border-slate-500 transition-colors">
+        <a href="/drafts"
+            class="block px-4 py-3 @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Drafts") == true ? "bg-white text-slate-950 font-bold border-l-4 border-blue-600" : "hover:bg-slate-800 border-l-4 border-transparent hover:border-slate-500 transition-colors")">
             Drafts
         </a>
 
-        <a href="#"
-            class="block px-4 py-3 hover:bg-slate-800 border-l-4 border-transparent hover:border-slate-500 transition-colors">
+        <a href="/sent"
+            class="block px-4 py-3 @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Sent") == true ? "bg-white text-slate-950 font-bold border-l-4 border-blue-600" : "hover:bg-slate-800 border-l-4 border-transparent hover:border-slate-500 transition-colors")">
             Sent Items
         </a>
     </nav>
 
     <div class="p-6 text-xs text-slate-500 text-center">
-        &copy; 2023 MailApp
+        &copy; @DateTime.Today.Year PaperMail
     </div>
 </aside>

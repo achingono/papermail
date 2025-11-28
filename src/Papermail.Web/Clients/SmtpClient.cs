@@ -35,37 +35,49 @@ public class SmtpClient : Papermail.Data.Clients.ISmtpClient
     }
 
     /// <summary>
-    /// Connects to the SMTP server and authenticates using OAuth2.
+    /// Connects to the SMTP server and authenticates using OAuth2 or basic auth.
     /// </summary>
     /// <param name="username">The username for authentication.</param>
-    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="accessToken">The OAuth2 access token, or password for basic auth.</param>
     /// <param name="ct">A token to cancel the operation.</param>
     /// <exception cref="ArgumentNullException">Thrown when settings is null.</exception>
     /// <exception cref="ArgumentException">Thrown when access token is empty.</exception>
-    /// <exception cref="AuthenticationException">Thrown when server doesn't support XOAUTH2.</exception>
     private async Task ConnectAndAuthenticateAsync(string username, string accessToken, CancellationToken ct)
     {
         if (settings == null)
             throw new ArgumentNullException(nameof(settings));
         if (string.IsNullOrWhiteSpace(accessToken))
-            throw new ArgumentException("Access token is required", nameof(accessToken));
+            throw new ArgumentException("Access token or password is required", nameof(accessToken));
 
         if (!client.IsConnected)
         {
-            await client.ConnectAsync(settings.Host, settings.Port, settings.UseTls, ct);
-        }
-
-        var mechanisms = client.AuthenticationMechanisms;
-
-        if (!mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
-        {
-            throw new AuthenticationException("Server does not support XOAUTH2 authentication.");
+            var secureSocketOptions = settings.UseTls 
+                ? SecureSocketOptions.StartTls 
+                : SecureSocketOptions.None;
+            await client.ConnectAsync(settings.Host, settings.Port, secureSocketOptions, ct);
         }
 
         if (!client.IsAuthenticated)
         {
-            var oauth2 = new SaslMechanismOAuth2(username, accessToken);
-            await client.AuthenticateAsync(oauth2, ct);
+            var mechanisms = client.AuthenticationMechanisms;
+            
+            // Try OAuth2 first if supported
+            if (mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var oauth2 = new SaslMechanismOAuth2(username, accessToken);
+                    await client.AuthenticateAsync(oauth2, ct);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "OAuth2 authentication failed, falling back to basic auth");
+                }
+            }
+            
+            // Fall back to basic authentication
+            await client.AuthenticateAsync(username, accessToken, ct);
         }
     }
 

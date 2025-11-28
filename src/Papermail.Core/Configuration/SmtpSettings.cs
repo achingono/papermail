@@ -24,4 +24,14 @@ public sealed class SmtpSettings
     /// Gets or sets a value indicating whether to trust invalid or self-signed certificates. Default is false.
     /// </summary>
     public bool TrustCertificates { get; set; } = false;
+    
+    /// <summary>
+    /// Gets or sets the username for SMTP authentication (fallback for basic auth).
+    /// </summary>
+    public string? Username { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the password for SMTP authentication (fallback for basic auth).
+    /// </summary>
+    public string? Password { get; set; }
 }

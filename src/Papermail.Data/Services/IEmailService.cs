@@ -14,6 +14,16 @@ public interface IEmailService
     Task<List<EmailItemModel>> GetInboxAsync(string userId, int page = 0, int pageSize = 50);
 
     /// <summary>
+    /// Retrieves sent emails with pagination.
+    /// </summary>
+    Task<List<EmailItemModel>> GetSentAsync(string userId, int page = 0, int pageSize = 50);
+
+    /// <summary>
+    /// Retrieves draft emails with pagination.
+    /// </summary>
+    Task<List<EmailItemModel>> GetDraftsAsync(string userId, int page = 0, int pageSize = 50);
+
+    /// <summary>
     /// Retrieves a single email by ID.
     /// </summary>
     Task<EmailModel?> GetEmailByIdAsync(Guid emailId, string userId);

@@ -1,0 +1,24 @@
+[
+    {
+        "id": "945dc90b-02ac-43e5-a4ab-2db744dce149",
+        "email": "admin@papermail.local",
+        "email_verified": true,
+        "name": "Administrator Account",
+        "nickname": "admin",
+        "given_name": "Administrator",
+        "family_name": "Account",
+        "password": "P@ssw0rd",
+        "groups": ["Everyone", "Administrators"]
+    },
+    {
+        "id": "fa6c7a8c-05f2-4041-96c4-3dbad71a3fd2",
+        "email": "user@papermail.local",
+        "email_verified": true,
+        "name": "User Account",
+        "nickname": "user",
+        "given_name": "User",
+        "family_name": "Account",
+        "password": "P@ssw0rd",
+        "groups": ["Everyone", "Users"]
+    }
+]

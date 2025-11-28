@@ -1,14 +1,14 @@
 @page
-@model Papermail.Web.Pages.InboxModel
+@model Papermail.Web.Pages.SentModel
 @{
-    ViewData["Title"] = "Inbox";
+    ViewData["Title"] = "Sent Items";
 }
 
 <div class="flex h-full">
     @await Html.PartialAsync("_Aside")
     
     <section class="flex-1 px-6 py-6 overflow-auto">
-        <h1 class="text-2xl font-bold mb-4 border-b-2 border-eink-black pb-2">Inbox</h1>
+        <h1 class="text-2xl font-bold mb-4 border-b-2 border-eink-black pb-2">Sent Items</h1>
         @await Html.PartialAsync("_List", Model.Items)
     </section>
 </div>

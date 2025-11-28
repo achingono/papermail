@@ -24,4 +24,14 @@ public sealed class ImapSettings
     /// Gets or sets a value indicating whether to trust invalid or self-signed certificates. Default is false.
     /// </summary>
     public bool TrustCertificates { get; set; } = false;
+    
+    /// <summary>
+    /// Gets or sets the username for IMAP authentication (used as fallback when OAuth is unavailable).
+    /// </summary>
+    public string? Username { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the password for IMAP authentication (used as fallback when OAuth is unavailable).
+    /// </summary>
+    public string? Password { get; set; }
 }

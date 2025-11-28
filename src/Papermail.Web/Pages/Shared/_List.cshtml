@@ -1,3 +1,5 @@
+@using Papermail.Data.Models
+@model IEnumerable<EmailItemModel>
 <div class="flex-1 overflow-auto">
     <table class="w-full text-left border-collapse">
         <thead class="bg-white sticky top-0 z-10">
@@ -9,53 +11,33 @@
         </thead>
 
         <tbody class="divide-y-2 divide-slate-200">
-            <tr class="hover:bg-blue-50 cursor-pointer group">
-                <td class="p-4 font-bold text-blue-800 group-hover:text-blue-900">
-                    Alice Freeman
-                </td>
-                <td class="p-4 font-bold text-slate-900">
-                    Project Update: Q4 Goals
-                </td>
-                <td class="p-4 text-right font-bold text-slate-900">
-                    10:42 AM
-                </td>
-            </tr>
-
-            <tr class="hover:bg-slate-100 cursor-pointer">
-                <td class="p-4 text-slate-700">
-                    SaaS Newsletter
-                </td>
-                <td class="p-4 text-slate-600">
-                    Weekly roundup: The state of CSS
-                </td>
-                <td class="p-4 text-right text-slate-500">
-                    Yesterday
-                </td>
-            </tr>
-
-            <tr class="hover:bg-slate-100 cursor-pointer">
-                <td class="p-4 text-slate-700">
-                    HR Department
-                </td>
-                <td class="p-4 text-slate-600">
-                    Holiday Calendar Updates
-                </td>
-                <td class="p-4 text-right text-slate-500">
-                    Oct 24
-                </td>
-            </tr>
-
-            <tr class="hover:bg-slate-100 cursor-pointer">
-                <td class="p-4 text-slate-700">
-                    DevOps Team
-                </td>
-                <td class="p-4 text-slate-600">
-                    [Alert] Server utilization high
-                </td>
-                <td class="p-4 text-right text-slate-500">
-                    Oct 22
-                </td>
-            </tr>
+            @if (Model != null)
+            {
+                foreach (var item in Model)
+                {
+                    <tr class="hover:bg-slate-100 cursor-pointer">
+                        <td class="p-4 @(item.IsRead ? "text-slate-700" : "font-bold text-blue-800")">
+                            @item.From
+                        </td>
+                        <td class="p-4 @(item.IsRead ? "text-slate-600" : "font-bold text-slate-900")">
+                            @item.Subject
+                            @if (item.HasAttachments)
+                            {
+                                <span class="ml-2 text-xs text-slate-500">📎</span>
+                            }
+                        </td>
+                        <td class="p-4 text-right @(item.IsRead ? "text-slate-500" : "font-bold text-slate-900")">
+                            @item.ReceivedAt.ToString("g")
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td class="p-4 text-slate-500" colspan="3">No items to display.</td>
+                </tr>
+            }
         </tbody>
     </table>
 </div>

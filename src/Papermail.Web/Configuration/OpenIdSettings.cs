@@ -29,4 +29,9 @@ public class OpenIdSettings
     /// Gets or sets the scopes to request during authentication.
     /// </summary>
     public List<string> Scopes { get; set; } = new() { "openid", "profile", "email", "offline_access" };
+
+    /// <summary>
+    /// Optional explicit metadata address (authority discovery). Use to point to internal HTTP endpoint in dev.
+    /// </summary>
+    public string? MetadataAddress { get; set; }
 }

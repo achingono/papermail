@@ -1,0 +1,88 @@
+@page
+@model Papermail.Web.Pages.ComposeModel
+@{
+    ViewData["Title"] = "Compose";
+}
+
+<div class="flex h-full">
+    @await Html.PartialAsync("_Aside")
+
+    <section class="flex-1 px-6 py-6 overflow-auto">
+        <h1 class="text-2xl font-bold mb-4 border-b-2 border-eink-black pb-2">Compose Email</h1>
+        
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="border-2 border-red-600 bg-red-50 p-4 mb-4">
+                <p class="text-red-800 font-bold">Error</p>
+                <p class="text-red-700">@Model.ErrorMessage</p>
+            </div>
+        }
+        
+        @if (Model.Success)
+        {
+            <div class="border-2 border-green-600 bg-green-50 p-4 mb-4">
+                <p class="text-green-800 font-bold">Success</p>
+                <p class="text-green-700">Email sent successfully!</p>
+            </div>
+        }
+        
+        <form method="post" class="space-y-4">
+            <div>
+                <label for="to" class="block font-bold mb-2">To:</label>
+                <input type="text" 
+                       id="to" 
+                       name="To" 
+                       asp-for="To"
+                       class="w-full px-4 py-2 border-2 border-eink-black focus:outline-none focus:border-blue-600"
+                       placeholder="recipient@example.com"
+                       required />
+                <span asp-validation-for="To" class="text-red-600 text-sm"></span>
+            </div>
+            
+            <div>
+                <label for="subject" class="block font-bold mb-2">Subject:</label>
+                <input type="text" 
+                       id="subject" 
+                       name="Subject" 
+                       asp-for="Subject"
+                       class="w-full px-4 py-2 border-2 border-eink-black focus:outline-none focus:border-blue-600"
+                       placeholder="Email subject"
+                       required />
+                <span asp-validation-for="Subject" class="text-red-600 text-sm"></span>
+            </div>
+            
+            <div>
+                <label for="body" class="block font-bold mb-2">Message:</label>
+                <textarea id="body" 
+                          name="Body" 
+                          asp-for="Body"
+                          rows="15"
+                          class="w-full px-4 py-2 border-2 border-eink-black focus:outline-none focus:border-blue-600 font-mono"
+                          placeholder="Type your message here..."
+                          required></textarea>
+                <span asp-validation-for="Body" class="text-red-600 text-sm"></span>
+            </div>
+            
+            <div class="flex gap-4">
+                <button type="submit" 
+                        name="action" 
+                        value="send"
+                        class="px-6 py-3 bg-eink-black text-white font-bold border-2 border-eink-black hover:bg-white hover:text-eink-black transition-colors">
+                    Send Email
+                </button>
+                
+                <button type="submit" 
+                        name="action" 
+                        value="draft"
+                        class="px-6 py-3 bg-white text-eink-black font-bold border-2 border-eink-black hover:bg-eink-black hover:text-white transition-colors">
+                    Save Draft
+                </button>
+                
+                <a href="/inbox" 
+                   class="px-6 py-3 bg-white text-eink-black font-bold border-2 border-eink-gray hover:bg-eink-gray transition-colors inline-block">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </section>
+</div>

@@ -10,6 +10,7 @@ using Papermail.Web.Services;
 using Papermail.Data.Repositories;
 using Papermail.Web.Clients;
 using Papermail.Data.Clients;
+using Papermail.Core.Configuration;
 
 // Create the web application builder
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +25,12 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+// Configure SMTP settings from configuration
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
+
+// Configure IMAP settings from configuration
+builder.Services.Configure<ImapSettings>(builder.Configuration.GetSection("Imap"));
+
 builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.TryAddSingleton<IPrincipalAccessor, PrincipalAccessor>();
 builder.Services.TryAddScoped<IPrincipal>(provider => provider.GetRequiredService<IPrincipalAccessor>().Principal!);
@@ -35,6 +42,7 @@ builder.Services.TryAddScoped<IImapClient, ImapClient>();
 builder.Services.TryAddScoped<ISmtpClient, SmtpClient>();
 
 builder.Services.AddDataProtection();
+
 builder.Services.AddDbContext<DataContext>(options =>
 {
     var connectionStringName = "Sql";

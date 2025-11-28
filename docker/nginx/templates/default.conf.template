@@ -1,0 +1,30 @@
+# API Server - api.famorize.local
+server {
+  listen ${HTTPS_PORT} ssl;
+  http2 on;
+  server_name ${CLIENT_DOMAIN};
+
+  # SSL configuration
+  include /etc/nginx/snippets/ssl.conf;
+
+  # Increase buffer sizes for OAuth callbacks with large headers
+  proxy_buffer_size 16k;
+  proxy_buffers 8 16k;
+  proxy_busy_buffers_size 32k;
+
+  # Health check endpoint
+  include /etc/nginx/snippets/healthz.conf;
+
+  # API endpoints - strip /v1 prefix if present
+  location / {
+    gzip on;
+    gzip_types text/plain application/javascript application/json text/css application/xml;
+
+    proxy_pass http://${CLIENT_HOST}:${CLIENT_PORT};
+    include /etc/nginx/snippets/proxy-headers.conf;
+    proxy_set_header X-Forwarded-Port ${SOURCE_PORT};
+
+    # Allow file uploads up to 10MB
+    client_max_body_size 10M;
+  }
+}

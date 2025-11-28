@@ -4,6 +4,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Papermail.Web.Configuration;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Papermail.Web.Services;
+using Papermail.Data.Services;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -64,6 +66,19 @@ public static class IServiceCollectionExtensions
                 options.ClientId = settings.ClientId;
                 options.ClientSecret = settings.ClientSecret;
                 options.RequireHttpsMetadata = settings.RequireHttpsMetadata;
+                if (!string.IsNullOrWhiteSpace(settings.MetadataAddress))
+                {
+                    options.MetadataAddress = settings.MetadataAddress;
+                }
+
+                // In Development, relax backchannel certificate validation to allow local dev certs
+                if (environment.IsDevelopment())
+                {
+                    options.BackchannelHttpHandler = new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    };
+                }
 
                 options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.ResponseType = OpenIdConnectResponseType.Code;
@@ -88,7 +103,7 @@ public static class IServiceCollectionExtensions
                 // Handle claim mapping when tokens are received
                 options.Events = new OpenIdConnectEvents
                 {
-                    OnTokenValidated = context =>
+                    OnTokenValidated = async context =>
                     {
                         if (context.Principal?.Identity is ClaimsIdentity identity)
                         {
@@ -137,9 +152,47 @@ public static class IServiceCollectionExtensions
                             {
                                 identity.AddClaim(new Claim(ClaimTypes.Surname, familyNameClaim.Value));
                             }
-                        }
 
-                        return Task.CompletedTask;
+                            // Create or update account in database
+                            var accountService = context.HttpContext.RequestServices.GetRequiredService<IAccountService>();
+                            var tokenService = context.HttpContext.RequestServices.GetRequiredService<ITokenService>();
+                            
+                            try
+                            {
+                                await accountService.EnsureAccountAsync(context.Principal, (account) =>
+                                {
+                                    var expiresAt = context.Properties?.Items.TryGetValue(".Token.expires_at", out var expiresAtValue) == true
+                                        ? expiresAtValue
+                                        : null;
+                                    var refreshToken = context.Properties?.Items.TryGetValue(".Token.refresh_token", out var refreshTokenValue) == true
+                                        ? refreshTokenValue
+                                        : null;
+                                    var accessToken = context.Properties?.Items.TryGetValue(".Token.access_token", out var accessTokenValue) == true
+                                        ? accessTokenValue
+                                        : null;
+
+                                    account.AccessToken = string.IsNullOrWhiteSpace(accessToken) 
+                                        ? string.Empty 
+                                        : tokenService.ProtectToken(accessToken);
+                                    account.RefreshToken = string.IsNullOrWhiteSpace(refreshToken)
+                                        ? string.Empty
+                                        : tokenService.ProtectToken(refreshToken);
+                                    account.ExpiresAt = string.IsNullOrWhiteSpace(expiresAt)
+                                        ? DateTimeOffset.UtcNow.AddHours(1)
+                                        : DateTimeOffset.Parse(expiresAt);
+                                    account.Scopes = context.Properties?.Items.TryGetValue(".Token.scope", out var scopeValue) == true
+                                        ? scopeValue.Split(' ')
+                                        : [];
+                                    account.DisplayName = identity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
+                                }, createIfNotExists: true);
+                                
+                                logger.LogInformation("Account ensured for user {UserId}", context.Principal.FindFirst("sub")?.Value);
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.LogError(ex, "Failed to ensure account during OIDC token validation");
+                            }
+                        }
                     }
                 };
             });

@@ -3,6 +3,7 @@ using System.Security.Authentication;
 using EmailEntity = Papermail.Core.Entities.Email;
 using Papermail.Data.Clients;
 using Papermail.Data.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Papermail.Data.Repositories;
 
@@ -14,6 +15,7 @@ public sealed class EmailRepository : IEmailRepository
     private readonly IImapClient _imapClient;
     private readonly ISmtpClient _smtpClient;
     private readonly ITokenService _tokenService;
+    private readonly ILogger<EmailRepository> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EmailRepository"/> class.
@@ -21,14 +23,17 @@ public sealed class EmailRepository : IEmailRepository
     /// <param name="imapClient">The IMAP client for email fetching operations.</param>
     /// <param name="smtpClient">The SMTP client for email sending operations.</param>
     /// <param name="tokenService">The token service for retrieving OAuth credentials.</param>
+    /// <param name="logger">The logger for logging warnings and errors.</param>
     public EmailRepository(
         IImapClient imapClient,
         ISmtpClient smtpClient,
-        ITokenService tokenService)
+        ITokenService tokenService,
+        ILogger<EmailRepository> logger)
     {
         _imapClient = imapClient ?? throw new ArgumentNullException(nameof(imapClient));
         _smtpClient = smtpClient ?? throw new ArgumentNullException(nameof(smtpClient));
         _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -90,6 +95,66 @@ public sealed class EmailRepository : IEmailRepository
     }
 
     /// <summary>
+    /// Retrieves sent emails with pagination via IMAP.
+    /// </summary>
+    /// <param name="userId">The user ID for authentication.</param>
+    /// <param name="page">The page number (0-based).</param>
+    /// <param name="pageSize">The number of emails per page.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A read-only collection of emails.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when credentials are unavailable.</exception>
+    public async Task<IReadOnlyCollection<EmailEntity>> GetSentAsync(string userId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+
+        var skip = page * pageSize;
+        try
+        {
+            var emails = await _imapClient.FetchSentEmailsAsync(credentials.Username, credentials.AccessToken, skip, pageSize, ct);
+            return emails.ToList();
+        }
+        catch (AuthenticationException)
+        {
+            return Array.Empty<EmailEntity>();
+        }
+    }
+
+    /// <summary>
+    /// Retrieves draft emails with pagination via IMAP.
+    /// </summary>
+    /// <param name="userId">The user ID for authentication.</param>
+    /// <param name="page">The page number (0-based).</param>
+    /// <param name="pageSize">The number of emails per page.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A read-only collection of emails.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when credentials are unavailable.</exception>
+    public async Task<IReadOnlyCollection<EmailEntity>> GetDraftsAsync(string userId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+
+        var skip = page * pageSize;
+        try
+        {
+            var emails = await _imapClient.FetchDraftEmailsAsync(credentials.Username, credentials.AccessToken, skip, pageSize, ct);
+            return emails.ToList();
+        }
+        catch (AuthenticationException)
+        {
+            return Array.Empty<EmailEntity>();
+        }
+    }
+
+    /// <summary>
     /// Marks an email as read via IMAP.
     /// </summary>
     /// <param name="id">The unique identifier of the email.</param>
@@ -143,7 +208,19 @@ public sealed class EmailRepository : IEmailRepository
         if (credentials.AccessToken == null)
             throw new InvalidOperationException("No access token available");
 
+        // Send via SMTP
         await _smtpClient.SendEmailAsync(credentials.Username, credentials.AccessToken, email, ct);
+        
+        // Save to Sent folder via IMAP after successful send
+        try
+        {
+            await _imapClient.SaveToSentAsync(credentials.Username, credentials.AccessToken, email, ct);
+        }
+        catch (Exception ex)
+        {
+            // Log but don't fail the send operation if saving to Sent fails
+            _logger.LogWarning(ex, "Failed to save email to Sent folder for user {UserId}", userId);
+        }
     }
 
     /// <summary>

@@ -1,22 +1,139 @@
 services:
+  proxy:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports:
+      - "${PROXY_HTTP_PORT:-80}:80"
+      - "${PROXY_HTTPS_PORT:-443}:443"
+    environment:
+      HTTP_PORT: 80
+      HTTPS_PORT: 443
+      SOURCE_PORT: 443
+      # Use the Docker service name for the client upstream to avoid DNS resolution failures
+      CLIENT_HOST: web
+      CLIENT_PORT: 8080
+      OIDC_HOST: oidc
+      OIDC_PORT: 8080
+      CLIENT_DOMAIN: ${CLIENT_DOMAIN:-papermail.local}
+      OIDC_DOMAIN: ${OIDC_DOMAIN:-oidc.papermail.local}
+    volumes:
+      - ./docker/nginx/templates:/etc/nginx/templates:ro
+      - ./docker/nginx/snippets:/etc/nginx/snippets:ro
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.crt:/etc/nginx/ssl/cert.pem:ro
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.key:/etc/nginx/ssl/key.pem:ro
+    depends_on:
+      web:
+        condition: service_started
+      mail:
+        condition: service_started
+      oidc:
+        condition: service_started
+    networks:
+      papermail-network:
+        aliases:
+          - papermail.local
+          - oidc.papermail.local
+      
   web:
     build:
       context: .
       dockerfile: src/Papermail.Web/Dockerfile
     ports:
       - "8080:8080"
+    entrypoint: ["sh","-c","update-ca-certificates && dotnet Papermail.Web.dll"]
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       CONNECTIONSTRINGS__SQL: "Server=sql,1433;Database=${SQL_DATABASE:-Papermail};User Id=sa;Password=${SQL_PASSWORD};TrustServerCertificate=True"
-      OPENID__AUTHORITY: ${OPENID_AUTHORITY}
-      OPENID__CLIENTID: ${OPENID_CLIENTID}
-      OPENID__CLIENTSECRET: ${OPENID_CLIENTSECRET}
-      OPENID__REQUIREHTTPSMETADATA: ${OPENID_REQUIREHTTPSMETADATA:-false}
+      IMAP__HOST: mail.papermail.local
+      IMAP__PORT: 143
+      IMAP__USESSL: "true"
+      IMAP__TRUSTCERTIFICATES: "true"
+      IMAP__USERNAME: admin@papermail.local
+      IMAP__PASSWORD: P@ssw0rd
+      SMTP__HOST: mail.papermail.local
+      SMTP__PORT: 587
+      SMTP__USETLS: "true"
+      SMTP__TRUSTCERTIFICATES: "true"
+      SMTP__USERNAME: admin@papermail.local
+      SMTP__PASSWORD: P@ssw0rd
+      OPENID__AUTHORITY: ${OIDC_AUTHORITY:-https://oidc.papermail.local/}
+      OPENID__CLIENTID: ${OIDC_CLIENTID:-a92e2069-b509-450b-a9e8-d73cead8735a}
+      OPENID__CLIENTSECRET: ${OIDC_CLIENTSECRET:-YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh}
+      OPENID__REQUIREHTTPSMETADATA: ${OIDC_REQUIREHTTPSMETADATA:-true}
+    volumes:
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail-local-ca.crt:/usr/local/share/ca-certificates/papermail-local-ca.crt:ro
+      # Persist DataProtection key ring to survive container restarts
+      - webdata:/app/keys      
     depends_on:
-      - sql
+      mail:
+        condition: service_started
+      oidc:
+        condition: service_started
+    networks:
+      papermail-network:
+        aliases:
+          - oidc.papermail.local
+
+  mail:
+    hostname: mail
+    domainname: papermail.local
+    image: docker.io/mailserver/docker-mailserver:latest
+    environment:
+      # Allow access from other containers
+      - PERMIT_DOCKER=network
+      # Disable SSL requirement for development
+      - SSL_TYPE=self-signed
+      # Enable OAuth2 authentication
+      - ENABLE_OAUTH2=1
+      # Point to your OAuth provider's introspection endpoint
+      - OAUTH2_INTROSPECTION_URL=http://oidc:8080/token/introspection
+      - OAUTH2_INTROSPECTION_MODE=post
+      - OAUTH2_CLIENT_ID=${OIDC_CLIENTID:-a92e2069-b509-450b-a9e8-d73cead8735a}
+      - OAUTH2_CLIENT_SECRET=${OIDC_CLIENTSECRET:-YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh}
+      - OAUTH2_USERNAME_ATTRIBUTE=email
+      # Define users with OAuth. They don't need a password defined in docker-mailserver.
+      - DMS_AUTH_OAUTH2_ACCOUNTS=admin@papermail.local,user@papermail.local
+    ports:
+      - "25:25"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - maildata:/var/mail
+      - mailstate:/var/mail-state
+      - maillogs:/var/log/mail
+      - ./docker/mailserver/config/:/tmp/docker-mailserver/
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.key:/tmp/docker-mailserver/ssl/mail.papermail.local-key.pem:ro
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.crt:/tmp/docker-mailserver/ssl/mail.papermail.local-cert.pem:ro
+      - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail.local.crt:/tmp/docker-mailserver/ssl/demoCA/cacert.pem:ro
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
+    restart: unless-stopped
+    networks:
+      papermail-network:
+        aliases:
+          - mail.papermail.local
+
+  oidc:
+    image: chingono.azurecr.io/plainscope/simple-oidc-provider:latest
+    ports:
+      - "8081:8080"
+    environment:
+      - PORT=8080
+      - ISSUER=http://oidc:8080
+      - EXTERNAL_HOST_NAME=${OIDC_DOMAIN:-oidc.papermail.local}
+      - CLIENT_ID=${OIDC_CLIENTID:-a92e2069-b509-450b-a9e8-d73cead8735a}
+      - CLIENT_SECRET=${OIDC_CLIENTSECRET:-YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh}
+      - REDIRECT_URIS=https://${CLIENT_DOMAIN:-papermail.local}/signin-oidc
+      - POST_LOGOUT_REDIRECT_URIS=https://${CLIENT_DOMAIN:-papermail.local}/signout-oidc
+      - COOKIE_KEYS=${OIDC_COOKIE_KEYS:-59761AB67FB5BA23BDD917B2F2E409394A848F50FA9CEB08860C73495339266E}
+      # Override default users with known credentials
+      - USERS=[{"id":"945dc90b-02ac-43e5-a4ab-2db744dce149","email":"admin@papermail.local","email_verified":true,"name":"Administrator Account","nickname":"admin","given_name":"Administrator","family_name":"Account","password":"P@ssw0rd","groups":["Everyone","Administrators"]},{"id":"a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d","email":"user@papermail.local","email_verified":true,"name":"User Account","nickname":"user","given_name":"User","family_name":"Account","password":"P@ssw0rd","groups":["Everyone"]}]
+    restart: unless-stopped
     networks:
       - papermail-network
-      
+
   sql:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
@@ -41,3 +158,7 @@ networks:
 
 volumes:
   sql_data:
+  maildata:
+  mailstate:
+  maillogs:
+  webdata:

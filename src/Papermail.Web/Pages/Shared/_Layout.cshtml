@@ -11,9 +11,11 @@
 </head>
 
 <body class="min-h-screen flex flex-col">
-    <main role="main" class="flex-1 p-6">
+    <main role="main" class="flex-1 flex flex-col">
         @await Html.PartialAsync("_Header")
-        @RenderBody()
+        <div class="flex-1 flex overflow-hidden">
+            @RenderBody()
+        </div>
     </main>
 
     <footer class="border-t-2 border-eink-black mt-8 no-print">

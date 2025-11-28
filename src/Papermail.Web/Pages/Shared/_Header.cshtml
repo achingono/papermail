@@ -9,6 +9,8 @@
                 @if (User.Identity?.IsAuthenticated ?? false)
                 {
                     <a href="/inbox" class="font-semibold">Inbox</a>
+                    <a href="/drafts" class="font-semibold">Drafts</a>
+                    <a href="/sent" class="font-semibold">Sent</a>
                     <a href="/compose" class="font-semibold">Compose</a>
                     <a href="/logout" class="font-semibold">Logout</a>
                     <a href="/profile" class="font-semibold">@User.Identity.Name</a>
