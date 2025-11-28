@@ -51,43 +51,27 @@ PaperMail follows a clean, layered architecture with clear separation of concern
 
 ```
 src/
-├── PaperMail.Web/                      # Main ASP.NET Core web application
+├── Papermail.Web/                      # Main ASP.NET Core web application
 │   ├── Pages/                          # Razor Pages (UI routes)
 │   │   ├── Index.cshtml               # Landing page
-│   │   ├── Login.cshtml               # Authentication page
-│   │   ├── Mail/                      # Email-related pages
-│   │   │   ├── Inbox.cshtml          # Inbox view
-│   │   │   ├── Read.cshtml           # Email reading view
-│   │   │   ├── Compose.cshtml        # Compose new email
-│   │   │   ├── Sent.cshtml           # Sent emails
-│   │   │   ├── Drafts.cshtml         # Draft emails
-│   │   │   └── Folder.cshtml         # Generic folder view
-│   │   ├── Settings/                  # Settings pages
-│   │   │   ├── Index.cshtml          # Settings overview
-│   │   │   ├── Account.cshtml        # Account settings
-│   │   │   ├── Display.cshtml        # Display preferences
-│   │   │   └── Sync.cshtml           # Sync settings
-│   │   └── Auth/                      # Authentication flows
-│   │       ├── OAuth.cshtml          # OAuth callback
-│   │       └── Logout.cshtml         # Logout page
+│   │   ├── Index.cshtml.cs            # Landing page model
+│   │   ├── Inbox.cshtml               # Inbox view
+│   │   └── Shared/                    # Shared layout components
+│   │       ├── _Layout.cshtml         # Main layout template
+│   │       ├── _Header.cshtml         # Header partial
+│   │       ├── _Aside.cshtml          # Sidebar partial
+│   │       └── _List.cshtml           # Email list partial
 │   │
-│   ├── ViewComponents/                # Reusable UI components
-│   │   ├── EmailListComponent.cs     # Email list renderer
-│   │   ├── EmailHeaderComponent.cs   # Email header display
-│   │   ├── FolderNavComponent.cs     # Folder navigation
-│   │   ├── ComposeFormComponent.cs   # Email composition form
-│   │   └── PaginationComponent.cs    # Pagination controls
+│   ├── Controllers/                   # API Controllers
+│   │   └── AuthController.cs         # Authentication controller
+│
+│   ├── Clients/                       # Email protocol clients
+│   │   ├── ImapClient.cs             # IMAP implementation
+│   │   └── SmtpClient.cs             # SMTP implementation
 │   │
 │   ├── wwwroot/                       # Static assets
-│   │   ├── css/                       # Stylesheets
-│   │   │   ├── site.css              # Main stylesheet (TailwindCSS output)
-│   │   │   └── print.css             # Print/E-Ink specific styles
-│   │   ├── js/                        # JavaScript files
-│   │   │   ├── alpine.min.js         # Alpine.js library
-│   │   │   └── site.js               # Custom JavaScript (minimal)
-│   │   ├── images/                    # Images and icons
-│   │   │   └── icons/                # SVG icons
-│   │   └── lib/                       # Third-party libraries (if any)
+│   │   └── css/                       # Stylesheets
+│   │       └── styles.css            # Main stylesheet
 │   │
 │   ├── Models/                        # View models and DTOs
 │   │   ├── ViewModels/               # Page-specific view models
@@ -168,46 +152,10 @@ src/
 │       ├── EmailValidator.cs         # Email validation rules
 │       └── ComposeValidator.cs       # Composition validation
 │
-├── PaperMail.Infrastructure/          # Infrastructure implementations
-│   ├── Email/                         # Email protocol implementation
-│   │   ├── ImapEmailRepository.cs    # IMAP implementation
-│   │   ├── SmtpEmailSender.cs        # SMTP implementation
-│   │   ├── MailKitWrapper.cs         # MailKit abstraction
-│   │   └── EmailParser.cs            # MIME parsing
-│   │
-│   ├── Authentication/                # Authentication implementations
-│   │   ├── OAuthProviders/           # OAuth provider implementations
-│   │   │   ├── GoogleOAuthProvider.cs
-│   │   │   ├── MicrosoftOAuthProvider.cs
-│   │   │   └── YahooOAuthProvider.cs
-│   │   ├── OAuthService.cs           # OAuth orchestration
-│   │   └── TokenStorage.cs           # Secure token storage
-│   │
-│   ├── Storage/                       # Data storage
-│   │   ├── InMemoryCache.cs          # Memory cache
-│   │   ├── SessionStorage.cs         # Session management
-│   │   └── FileStorage.cs            # File attachment temporary storage
-│   │
-│   ├── Security/                      # Security implementations
-│   │   ├── HtmlSanitizer.cs          # HTML sanitization
-│   │   ├── EncryptionService.cs      # Token encryption
-│   │   └── CspBuilder.cs             # Content Security Policy
-│   │
-│   └── Configuration/                 # Infrastructure configuration
-│       ├── ImapSettings.cs           # IMAP configuration
-│       ├── SmtpSettings.cs           # SMTP configuration
-│       └── OAuthSettings.cs          # OAuth configuration
-│
-└── PaperMail.Tests/                   # Test projects
+└── Papermail.Tests/                   # Test projects (future)
     ├── UnitTests/                     # Unit tests
-    │   ├── Services/
-    │   ├── Repositories/
-    │   └── Validators/
     ├── IntegrationTests/              # Integration tests
-    │   ├── Email/
-    │   └── Authentication/
     └── E2ETests/                      # End-to-end tests
-        └── Pages/
 ```
 
 ## Layer Responsibilities

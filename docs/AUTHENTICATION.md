@@ -24,91 +24,19 @@ PaperMail implements OAuth 2.0 as the primary authentication method, with suppor
 - Token management and refresh
 - Redirect flow on E-Ink devices (slow)
 
-### Supported Providers
+### Current Implementation Status
 
-#### 1. Google (Gmail)
+The application currently implements **OpenID Connect authentication with Azure AD** (Microsoft Entra ID).
 
-**OAuth Endpoint**: `https://accounts.google.com/o/oauth2/v2/auth`
-
-**Token Endpoint**: `https://oauth2.googleapis.com/token`
+**Authentication Endpoint**: Uses Azure AD B2C or Entra ID endpoints
 
 **Required Scopes**:
+- `openid` - Basic OpenID Connect authentication
+- `profile` - User profile information
+- `email` - Email address
+- `offline_access` - Refresh token support
 
-- `https://mail.google.com/` - Full mail access (IMAP/SMTP)
-
-**IMAP Settings**:
-
-- Server: `imap.gmail.com`
-- Port: `993`
-- SSL: Required
-
-**SMTP Settings**:
-
-- Server: `smtp.gmail.com`
-- Port: `587` or `465`
-- TLS/SSL: Required
-
-**Implementation Notes**:
-
-- Use PKCE flow for enhanced security
-- Support app passwords as fallback
-- Handle 2FA users
-
-#### 2. Microsoft (Outlook.com, Office 365)
-
-**OAuth Endpoint**: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`
-
-**Token Endpoint**: `https://login.microsoftonline.com/common/oauth2/v2.0/token`
-
-**Required Scopes**:
-
-- `https://outlook.office.com/IMAP.AccessAsUser.All` - IMAP access
-- `https://outlook.office.com/SMTP.Send` - SMTP access
-- `offline_access` - Refresh token
-
-**IMAP Settings**:
-
-- Server: `outlook.office365.com`
-- Port: `993`
-- SSL: Required
-
-**SMTP Settings**:
-
-- Server: `smtp.office365.com`
-- Port: `587`
-- TLS: Required
-
-**Implementation Notes**:
-
-- Support both personal and work accounts
-- Handle tenant-specific requirements
-
-#### 3. Yahoo Mail
-
-**OAuth Endpoint**: `https://api.login.yahoo.com/oauth2/request_auth`
-
-**Token Endpoint**: `https://api.login.yahoo.com/oauth2/get_token`
-
-**Required Scopes**:
-
-- `mail-w` - Read/write mail access
-
-**IMAP Settings**:
-
-- Server: `imap.mail.yahoo.com`
-- Port: `993`
-- SSL: Required
-
-**SMTP Settings**:
-
-- Server: `smtp.mail.yahoo.com`
-- Port: `587` or `465`
-- TLS/SSL: Required
-
-**Implementation Notes**:
-
-- Requires app password for some accounts
-- May require security settings adjustment
+**Implementation**: See `AuthController.cs` and `IServiceCollectionExtensions.cs`
 
 ## OAuth Flow Implementation
 
