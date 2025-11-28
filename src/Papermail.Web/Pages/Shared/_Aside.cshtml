@@ -23,9 +23,20 @@
             class="block px-4 py-3 @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Sent") == true ? "bg-white text-slate-950 font-bold border-l-4 border-blue-600" : "hover:bg-slate-800 border-l-4 border-transparent hover:border-slate-500 transition-colors")">
             Sent Items
         </a>
-    </nav>
 
-    <div class="p-6 text-xs text-slate-500 text-center">
-        &copy; @DateTime.Today.Year PaperMail
-    </div>
+        <a href="/deleted"
+            class="block px-4 py-3 @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Deleted") == true ? "bg-white text-slate-950 font-bold border-l-4 border-blue-600" : "hover:bg-slate-800 border-l-4 border-transparent hover:border-slate-500 transition-colors")">
+            Deleted Items
+        </a>
+
+        <a href="/junk"
+            class="block px-4 py-3 @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Junk") == true ? "bg-white text-slate-950 font-bold border-l-4 border-blue-600" : "hover:bg-slate-800 border-l-4 border-transparent hover:border-slate-500 transition-colors")">
+            Junk Email
+        </a>
+
+        <a href="/archive"
+            class="block px-4 py-3 @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Archive") == true ? "bg-white text-slate-950 font-bold border-l-4 border-blue-600" : "hover:bg-slate-800 border-l-4 border-transparent hover:border-slate-500 transition-colors")">
+            Archive
+        </a>
+    </nav>
 </aside>

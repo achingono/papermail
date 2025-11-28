@@ -7,26 +7,26 @@ using Papermail.Data.Services;
 namespace Papermail.Web.Pages;
 
 /// <summary>
-/// Page model for the Inbox folder, lists recent emails.
+/// Page model for the Junk folder, lists recent emails.
 /// </summary>
 [Authorize]
-public class InboxModel : PageModel
+public class JunkModel : PageModel
 {
     private readonly IEmailService _emailService;
 
     /// <summary>
-    /// The items to render in the inbox list.
+    /// The items to render in the junk list.
     /// </summary>
     public List<EmailItemModel> Items { get; private set; } = new();
     
-    public string FolderName => "Inbox";
+    public string FolderName => "Junk Mail";
     public int CurrentPage { get; private set; }
     public int PageSize { get; private set; }
     public string SortDirection { get; private set; } = "desc";
     public int TotalCount { get; private set; }
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
 
-    public InboxModel(IEmailService emailService)
+    public JunkModel(IEmailService emailService)
     {
         _emailService = emailService;
     }
@@ -48,12 +48,12 @@ public class InboxModel : PageModel
 
         try
         {
-            Items = await _emailService.GetInboxAsync(userId, page, pageSize);
-            TotalCount = await _emailService.GetInboxCountAsync(userId);
+            Items = await _emailService.GetJunkAsync(userId, page, pageSize);
+            TotalCount = await _emailService.GetJunkCountAsync(userId);
         }
         catch (InvalidOperationException)
         {
-            // No account/credentials configured yet; show empty inbox
+            // No account/credentials configured yet; show empty junk
             Items = new List<EmailItemModel>();
             TotalCount = 0;
         }

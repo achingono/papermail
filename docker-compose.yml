@@ -63,7 +63,12 @@ services:
     volumes:
       - ${CERTIFICATE_PATH:-~/.aspnet/https}/papermail-local-ca.crt:/usr/local/share/ca-certificates/papermail-local-ca.crt:ro
       # Persist DataProtection key ring to survive container restarts
-      - webdata:/app/keys      
+      - webdata:/app/keys    
+    develop:  
+      watch:
+        - action: rebuild
+          path: src/Papermail.Web
+    restart: unless-stopped
     depends_on:
       mail:
         condition: service_started

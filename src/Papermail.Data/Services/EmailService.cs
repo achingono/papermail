@@ -260,4 +260,130 @@ public class EmailService : IEmailService
         await _emailRepository.DeleteAsync(emailId, userId);
         _logger.LogInformation("Deleted email {EmailId} for user {UserId}", emailId, userId);
     }
+
+    public async Task<List<EmailItemModel>> GetDeletedAsync(string userId, int page = 0, int pageSize = 50)
+    {
+        _logger.LogDebug("GetDeletedAsync called for user {UserId}, page {Page}, pageSize {PageSize}", userId, page, pageSize);
+        
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            _logger.LogWarning("GetDeletedAsync called with null or empty userId");
+            throw new ArgumentException("User ID is required", nameof(userId));
+        }
+
+        if (page < 0)
+        {
+            _logger.LogWarning("GetDeletedAsync called with negative page {Page}", page);
+            throw new ArgumentOutOfRangeException(nameof(page), "Page must be non-negative");
+        }
+
+        if (pageSize <= 0 || pageSize > 200)
+        {
+            _logger.LogWarning("GetDeletedAsync called with invalid pageSize {PageSize}", pageSize);
+            throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
+        }
+
+        var emails = await _emailRepository.GetDeletedAsync(userId, page, pageSize);
+        var result = emails.Select(EmailMapper.ToListItemDto).ToList();
+        _logger.LogInformation("Retrieved {Count} deleted emails for user {UserId}", result.Count, userId);
+        return result;
+    }
+
+    public async Task<List<EmailItemModel>> GetArchiveAsync(string userId, int page = 0, int pageSize = 50)
+    {
+        _logger.LogDebug("GetArchiveAsync called for user {UserId}, page {Page}, pageSize {PageSize}", userId, page, pageSize);
+        
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            _logger.LogWarning("GetArchiveAsync called with null or empty userId");
+            throw new ArgumentException("User ID is required", nameof(userId));
+        }
+
+        if (page < 0)
+        {
+            _logger.LogWarning("GetArchiveAsync called with negative page {Page}", page);
+            throw new ArgumentOutOfRangeException(nameof(page), "Page must be non-negative");
+        }
+
+        if (pageSize <= 0 || pageSize > 200)
+        {
+            _logger.LogWarning("GetArchiveAsync called with invalid pageSize {PageSize}", pageSize);
+            throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
+        }
+
+        var emails = await _emailRepository.GetArchiveAsync(userId, page, pageSize);
+        var result = emails.Select(EmailMapper.ToListItemDto).ToList();
+        _logger.LogInformation("Retrieved {Count} archive emails for user {UserId}", result.Count, userId);
+        return result;
+    }
+
+    public async Task<List<EmailItemModel>> GetJunkAsync(string userId, int page = 0, int pageSize = 50)
+    {
+        _logger.LogDebug("GetJunkAsync called for user {UserId}, page {Page}, pageSize {PageSize}", userId, page, pageSize);
+        
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            _logger.LogWarning("GetJunkAsync called with null or empty userId");
+            throw new ArgumentException("User ID is required", nameof(userId));
+        }
+
+        if (page < 0)
+        {
+            _logger.LogWarning("GetJunkAsync called with negative page {Page}", page);
+            throw new ArgumentOutOfRangeException(nameof(page), "Page must be non-negative");
+        }
+
+        if (pageSize <= 0 || pageSize > 200)
+        {
+            _logger.LogWarning("GetJunkAsync called with invalid pageSize {PageSize}", pageSize);
+            throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
+        }
+
+        var emails = await _emailRepository.GetJunkAsync(userId, page, pageSize);
+        var result = emails.Select(EmailMapper.ToListItemDto).ToList();
+        _logger.LogInformation("Retrieved {Count} junk emails for user {UserId}", result.Count, userId);
+        return result;
+    }    
+
+    public async Task<int> GetInboxCountAsync(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID is required", nameof(userId));
+        return await _emailRepository.GetInboxCountAsync(userId);
+    }
+
+    public async Task<int> GetSentCountAsync(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID is required", nameof(userId));
+        return await _emailRepository.GetSentCountAsync(userId);
+    }
+
+    public async Task<int> GetDraftsCountAsync(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID is required", nameof(userId));
+        return await _emailRepository.GetDraftsCountAsync(userId);
+    }
+
+    public async Task<int> GetDeletedCountAsync(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID is required", nameof(userId));
+        return await _emailRepository.GetDeletedCountAsync(userId);
+    }
+
+    public async Task<int> GetArchiveCountAsync(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID is required", nameof(userId));
+        return await _emailRepository.GetArchiveCountAsync(userId);
+    }
+
+    public async Task<int> GetJunkCountAsync(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID is required", nameof(userId));
+        return await _emailRepository.GetJunkCountAsync(userId);
+    }
 }

@@ -177,6 +177,117 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     }
 
     /// <summary>
+    /// Fetches a range of email messages from the Archive folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
+    public async Task<IEnumerable<Email>> FetchArchiveEmailsAsync(string username, string accessToken, int skip, int take, CancellationToken ct = default)
+    {
+        return await FetchEmailsFromFolderAsync(username, accessToken, MailKit.SpecialFolder.Archive, skip, take, ct);
+    }
+
+    /// <summary>
+    /// Fetches a range of email messages from the Sent folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
+    public async Task<IEnumerable<Email>> FetchDeletedEmailsAsync(string username, string accessToken, int skip, int take, CancellationToken ct = default)
+    {
+        return await FetchEmailsFromFolderAsync(username, accessToken, MailKit.SpecialFolder.Trash, skip, take, ct);
+    }
+
+    /// <summary>
+    /// Fetches a range of email messages from the Junk folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
+    public async Task<IEnumerable<Email>> FetchJunkEmailsAsync(string username, string accessToken, int skip, int take, CancellationToken ct = default)
+    {
+        return await FetchEmailsFromFolderAsync(username, accessToken, MailKit.SpecialFolder.Junk, skip, take, ct);
+    }
+
+    public async Task<int> GetInboxCountAsync(string username, string accessToken, CancellationToken ct = default)
+    {
+        await ConnectAndAuthenticateAsync(username, accessToken, ct);
+        var inbox = client.Inbox;
+        await inbox.OpenAsync(FolderAccess.ReadOnly, ct);
+        var count = inbox.Count;
+        await client.DisconnectAsync(true, ct);
+        return count;
+    }
+
+    public async Task<int> GetSentCountAsync(string username, string accessToken, CancellationToken ct = default)
+    {
+        await ConnectAndAuthenticateAsync(username, accessToken, ct);
+        var sent = client.GetFolder(MailKit.SpecialFolder.Sent);
+        await sent.OpenAsync(FolderAccess.ReadOnly, ct);
+        var count = sent.Count;
+        await client.DisconnectAsync(true, ct);
+        return count;
+    }
+
+    public async Task<int> GetDraftsCountAsync(string username, string accessToken, CancellationToken ct = default)
+    {
+        await ConnectAndAuthenticateAsync(username, accessToken, ct);
+        var drafts = client.GetFolder(MailKit.SpecialFolder.Drafts);
+        await drafts.OpenAsync(FolderAccess.ReadOnly, ct);
+        var count = drafts.Count;
+        await client.DisconnectAsync(true, ct);
+        return count;
+    }
+
+    public async Task<int> GetDeletedCountAsync(string username, string accessToken, CancellationToken ct = default)
+    {
+        await ConnectAndAuthenticateAsync(username, accessToken, ct);
+        var trash = client.GetFolder(MailKit.SpecialFolder.Trash);
+        await trash.OpenAsync(FolderAccess.ReadOnly, ct);
+        var count = trash.Count;
+        await client.DisconnectAsync(true, ct);
+        return count;
+    }
+
+    public async Task<int> GetJunkCountAsync(string username, string accessToken, CancellationToken ct = default)
+    {
+        await ConnectAndAuthenticateAsync(username, accessToken, ct);
+        var junk = client.GetFolder(MailKit.SpecialFolder.Junk);
+        await junk.OpenAsync(FolderAccess.ReadOnly, ct);
+        var count = junk.Count;
+        await client.DisconnectAsync(true, ct);
+        return count;
+    }
+
+    public async Task<int> GetArchiveCountAsync(string username, string accessToken, CancellationToken ct = default)
+    {
+        await ConnectAndAuthenticateAsync(username, accessToken, ct);
+        var archive = client.GetFolder(MailKit.SpecialFolder.Archive);
+
+        if (archive == null)
+        {
+            logger.LogWarning("Folder {Folder} not found for user {Username}", MailKit.SpecialFolder.Archive, username);
+            // create folder
+            await client.GetFolder(client.PersonalNamespaces[0]).CreateAsync(MailKit.SpecialFolder.Archive.ToString(), true, ct);
+            return 0;
+        }        
+        
+        await archive.OpenAsync(FolderAccess.ReadOnly, ct);
+        var count = archive.Count;
+        await client.DisconnectAsync(true, ct);
+        return count;
+    }
+
+    /// <summary>
     /// Fetches a range of email messages from a specific folder.
     /// </summary>
     /// <param name="username">The username for authentication.</param>
@@ -196,6 +307,14 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         var folder = specialFolder == MailKit.SpecialFolder.All 
             ? client.Inbox 
             : client.GetFolder(specialFolder);
+
+        if (folder == null)
+        {
+            logger.LogWarning("Folder {Folder} not found for user {Username}", specialFolder, username);
+            // create folder
+            await client.GetFolder(client.PersonalNamespaces[0]).CreateAsync(specialFolder.ToString(), true, ct);
+            return Enumerable.Empty<Email>();
+        }
         
         logger.LogDebug("Opening folder {FolderName} in ReadOnly mode", folder.FullName);
         await folder.OpenAsync(FolderAccess.ReadOnly, ct);

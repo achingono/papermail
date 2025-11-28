@@ -241,4 +241,198 @@ public sealed class EmailRepository : IEmailRepository
 
         await _imapClient.DeleteAsync(credentials.Username, credentials.AccessToken, id, ct);
     }
+
+
+    /// <summary>
+    /// Retrieves junk emails with pagination via IMAP.
+    /// </summary>
+    /// <param name="userId">The user ID for authentication.</param>
+    /// <param name="page">The page number (0-based).</param>
+    /// <param name="pageSize">The number of emails per page.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A read-only collection of emails.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when credentials are unavailable.</exception>
+    public async Task<IReadOnlyCollection<EmailEntity>> GetJunkAsync(string userId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+
+        var skip = page * pageSize;
+        try
+        {
+            var emails = await _imapClient.FetchJunkEmailsAsync(credentials.Username, credentials.AccessToken, skip, pageSize, ct);
+            return emails.ToList();
+        }
+        catch (AuthenticationException)
+        {
+            return Array.Empty<EmailEntity>();
+        }
+    }
+
+    /// <summary>
+    /// Retrieves archived emails with pagination via IMAP.
+    /// </summary>
+    /// <param name="userId">The user ID for authentication.</param>
+    /// <param name="page">The page number (0-based).</param>
+    /// <param name="pageSize">The number of emails per page.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A read-only collection of emails.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when credentials are unavailable.</exception>
+    public async Task<IReadOnlyCollection<EmailEntity>> GetArchiveAsync(string userId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+
+        var skip = page * pageSize;
+        try
+        {
+            var emails = await _imapClient.FetchArchiveEmailsAsync(credentials.Username, credentials.AccessToken, skip, pageSize, ct);
+            return emails.ToList();
+        }
+        catch (AuthenticationException)
+        {
+            return Array.Empty<EmailEntity>();
+        }
+    }
+
+    /// <summary>
+    /// Retrieves deleted emails with pagination via IMAP.
+    /// </summary>
+    /// <param name="userId">The user ID for authentication.</param>
+    /// <param name="page">The page number (0-based).</param>
+    /// <param name="pageSize">The number of emails per page.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A read-only collection of emails.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when credentials are unavailable.</exception>
+    public async Task<IReadOnlyCollection<EmailEntity>> GetDeletedAsync(string userId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+
+        var skip = page * pageSize;
+        try
+        {
+            var emails = await _imapClient.FetchDeletedEmailsAsync(credentials.Username, credentials.AccessToken, skip, pageSize, ct);
+            return emails.ToList();
+        }
+        catch (AuthenticationException)
+        {
+            return Array.Empty<EmailEntity>();
+        }
+    }
+
+    public async Task<int> GetInboxCountAsync(string userId, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+
+        try
+        {
+            return await _imapClient.GetInboxCountAsync(credentials.Username, credentials.AccessToken, ct);
+        }
+        catch (AuthenticationException)
+        {
+            return 0;
+        }
+    }
+
+    public async Task<int> GetSentCountAsync(string userId, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+        try
+        {
+            return await _imapClient.GetSentCountAsync(credentials.Username, credentials.AccessToken, ct);
+        }
+        catch (AuthenticationException)
+        {
+            return 0;
+        }
+    }
+
+    public async Task<int> GetDraftsCountAsync(string userId, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+        try
+        {
+            return await _imapClient.GetDraftsCountAsync(credentials.Username, credentials.AccessToken, ct);
+        }
+        catch (AuthenticationException)
+        {
+            return 0;
+        }
+    }
+
+    public async Task<int> GetDeletedCountAsync(string userId, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+        try
+        {
+            return await _imapClient.GetDeletedCountAsync(credentials.Username, credentials.AccessToken, ct);
+        }
+        catch (AuthenticationException)
+        {
+            return 0;
+        }
+    }
+
+    public async Task<int> GetJunkCountAsync(string userId, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+        try
+        {
+            return await _imapClient.GetJunkCountAsync(credentials.Username, credentials.AccessToken, ct);
+        }
+        catch (AuthenticationException)
+        {
+            return 0;
+        }
+    }
+
+    public async Task<int> GetArchiveCountAsync(string userId, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+        try
+        {
+            return await _imapClient.GetArchiveCountAsync(credentials.Username, credentials.AccessToken, ct);
+        }
+        catch (AuthenticationException)
+        {
+            return 0;
+        }
+    }
 }

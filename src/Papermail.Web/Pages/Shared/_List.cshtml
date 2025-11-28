@@ -1,43 +1,88 @@
-@using Papermail.Data.Models
-@model IEnumerable<EmailItemModel>
-<div class="flex-1 overflow-auto">
-    <table class="w-full text-left border-collapse">
-        <thead class="bg-white sticky top-0 z-10">
-            <tr class="border-b-4 border-slate-950 text-sm uppercase tracking-wide">
-                <th class="p-4 font-black w-1/4">From</th>
-                <th class="p-4 font-black w-1/2">Subject</th>
-                <th class="p-4 font-black w-1/4 text-right">Received</th>
-            </tr>
-        </thead>
+@using Papermail.Web.Models
+@model EmailListViewModel
+<section class="flex-1 flex flex-col overflow-hidden">
+    <div class="flex-1 overflow-auto">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-white sticky top-0 z-10">
+                <tr class="border-b-2 border-eink-black">
+                    <th colspan="3" class="p-4">
+                        <div class="flex items-center justify-between">
+                            <h1 class="text-2xl font-bold">@Model.FolderName</h1>
+                            <div class="flex items-center gap-2">
+                                @{
+                                    var newSort = Model.SortDirection == "asc" ? "desc" : "asc";
+                                    var sortIcon = Model.SortDirection == "asc" ? "↑" : "↓";
+                                }
+                                <a href="@Model.PageUrl?page=@Model.CurrentPage&pageSize=@Model.PageSize&sort=@newSort" 
+                                   class="px-3 py-1 border-2 border-slate-950 hover:bg-slate-100 font-bold"
+                                   title="Sort @(Model.SortDirection == "asc" ? "Descending" : "Ascending")">
+                                    @sortIcon
+                                </a>
+                                <div class="flex items-center gap-1">
+                                    <a href="@Model.PageUrl?page=0&pageSize=@Model.PageSize&sort=@Model.SortDirection" 
+                                       class="px-2 py-1 border-2 border-slate-950 hover:bg-slate-100 @(Model.CurrentPage == 0 ? "opacity-50" : "")"
+                                       title="First Page">
+                                        ≪
+                                    </a>
+                                    <a href="@Model.PageUrl?page=@Math.Max(0, Model.CurrentPage - 1)&pageSize=@Model.PageSize&sort=@Model.SortDirection" 
+                                       class="px-2 py-1 border-2 border-slate-950 hover:bg-slate-100 @(Model.CurrentPage == 0 ? "opacity-50" : "")"
+                                       title="Previous Page">
+                                        ‹
+                                    </a>
+                                    <span class="px-3 py-1 text-sm">
+                                        @(Model.CurrentPage + 1) / @Math.Max(1, Model.TotalPages)
+                                    </span>
+                                    <a href="@Model.PageUrl?page=@Math.Min(Model.TotalPages - 1, Model.CurrentPage + 1)&pageSize=@Model.PageSize&sort=@Model.SortDirection" 
+                                       class="px-2 py-1 border-2 border-slate-950 hover:bg-slate-100 @(Model.CurrentPage >= Model.TotalPages - 1 ? "opacity-50" : "")"
+                                       title="Next Page">
+                                        ›
+                                    </a>
+                                    <a href="@Model.PageUrl?page=@Math.Max(0, Model.TotalPages - 1)&pageSize=@Model.PageSize&sort=@Model.SortDirection" 
+                                       class="px-2 py-1 border-2 border-slate-950 hover:bg-slate-100 @(Model.CurrentPage >= Model.TotalPages - 1 ? "opacity-50" : "")"
+                                       title="Last Page">
+                                        ≫
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr class="border-b-4 border-slate-950 text-sm uppercase tracking-wide">
+                    <th class="p-4 font-black w-1/4">From</th>
+                    <th class="p-4 font-black w-1/2">Subject</th>
+                    <th class="p-4 font-black w-1/4 text-right">Received</th>
+                </tr>
+            </thead>
 
-        <tbody class="divide-y-2 divide-slate-200">
-            @if (Model != null)
-            {
-                foreach (var item in Model)
+            <tbody class="divide-y-2 divide-slate-200">
+                @if (Model.Items != null && Model.Items.Any())
                 {
-                    <tr class="hover:bg-slate-100 cursor-pointer">
-                        <td class="p-4 @(item.IsRead ? "text-slate-700" : "font-bold text-blue-800")">
-                            @item.From
-                        </td>
-                        <td class="p-4 @(item.IsRead ? "text-slate-600" : "font-bold text-slate-900")">
-                            @item.Subject
-                            @if (item.HasAttachments)
-                            {
-                                <span class="ml-2 text-xs text-slate-500">📎</span>
-                            }
-                        </td>
-                        <td class="p-4 text-right @(item.IsRead ? "text-slate-500" : "font-bold text-slate-900")">
-                            @item.ReceivedAt.ToString("g")
-                        </td>
+                    foreach (var item in Model.Items)
+                    {
+                        <tr class="hover:bg-slate-100 cursor-pointer">
+                            <td class="p-4 @(item.IsRead ? "text-slate-700" : "font-bold text-blue-800")">
+                                @item.From
+                            </td>
+                            <td class="p-4 @(item.IsRead ? "text-slate-600" : "font-bold text-slate-900")">
+                                @item.Subject
+                                @if (item.HasAttachments)
+                                {
+                                    <span class="ml-2 text-xs text-slate-500">📎</span>
+                                }
+                            </td>
+                            <td class="p-4 text-right @(item.IsRead ? "text-slate-500" : "font-bold text-slate-900")">
+                                @item.ReceivedAt.ToString("g")
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td class="p-4 text-slate-500" colspan="3">No items to display.</td>
                     </tr>
                 }
-            }
-            else
-            {
-                <tr>
-                    <td class="p-4 text-slate-500" colspan="3">No items to display.</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
+            </tbody>
+        </table>
+    </div>
+</section>

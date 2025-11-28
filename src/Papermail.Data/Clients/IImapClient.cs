@@ -85,4 +85,67 @@ public interface IImapClient
     /// <param name="emailId">The unique identifier of the email to delete.</param>
     /// <param name="ct">A token to cancel the operation.</param>
     Task DeleteAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default);
+    
+    /// <summary>
+    /// Fetches a range of email messages from the Archive folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
+    Task<IEnumerable<Email>> FetchArchiveEmailsAsync(string username, string accessToken, int skip, int pageSize, CancellationToken ct);
+    
+    /// <summary>
+    /// Fetches a range of email messages from the Deleted folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
+    Task<IEnumerable<Email>> FetchDeletedEmailsAsync(string username, string accessToken, int skip, int pageSize, CancellationToken ct);
+    
+    /// <summary>
+    /// Fetches a range of email messages from the Junk folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
+    Task<IEnumerable<Email>> FetchJunkEmailsAsync(string username, string accessToken, int skip, int pageSize, CancellationToken ct);
+
+    /// <summary>
+    /// Gets total message count in the Inbox folder.
+    /// </summary>
+    Task<int> GetInboxCountAsync(string username, string accessToken, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets total message count in the Sent folder.
+    /// </summary>
+    Task<int> GetSentCountAsync(string username, string accessToken, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets total message count in the Drafts folder.
+    /// </summary>
+    Task<int> GetDraftsCountAsync(string username, string accessToken, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets total message count in the Deleted folder.
+    /// </summary>
+    Task<int> GetDeletedCountAsync(string username, string accessToken, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets total message count in the Junk folder.
+    /// </summary>
+    Task<int> GetJunkCountAsync(string username, string accessToken, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets total message count in the Archive folder.
+    /// </summary>
+    Task<int> GetArchiveCountAsync(string username, string accessToken, CancellationToken ct = default);
 }

@@ -10,7 +10,7 @@ namespace Papermail.Web.Pages;
 /// Page model for the Inbox folder, lists recent emails.
 /// </summary>
 [Authorize]
-public class InboxModel : PageModel
+public class DeletedModel : PageModel
 {
     private readonly IEmailService _emailService;
 
@@ -19,14 +19,14 @@ public class InboxModel : PageModel
     /// </summary>
     public List<EmailItemModel> Items { get; private set; } = new();
     
-    public string FolderName => "Inbox";
+    public string FolderName => "Deleted";
     public int CurrentPage { get; private set; }
     public int PageSize { get; private set; }
     public string SortDirection { get; private set; } = "desc";
     public int TotalCount { get; private set; }
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
 
-    public InboxModel(IEmailService emailService)
+    public DeletedModel(IEmailService emailService)
     {
         _emailService = emailService;
     }
@@ -48,8 +48,8 @@ public class InboxModel : PageModel
 
         try
         {
-            Items = await _emailService.GetInboxAsync(userId, page, pageSize);
-            TotalCount = await _emailService.GetInboxCountAsync(userId);
+            Items = await _emailService.GetDeletedAsync(userId, page, pageSize);
+            TotalCount = await _emailService.GetDeletedCountAsync(userId);
         }
         catch (InvalidOperationException)
         {

@@ -1,14 +1,21 @@
 @page
+@using Papermail.Web.Models
 @model Papermail.Web.Pages.DraftsModel
 @{
     ViewData["Title"] = "Drafts";
+    var listModel = new EmailListViewModel
+    {
+        Items = Model.Items,
+        FolderName = Model.FolderName,
+        CurrentPage = Model.CurrentPage,
+        PageSize = Model.PageSize,
+        SortDirection = Model.SortDirection,
+        TotalPages = Model.TotalPages,
+        PageUrl = "/drafts"
+    };
 }
 
-<div class="flex h-full">
+<div class="flex h-full w-full">
     @await Html.PartialAsync("_Aside")
-    
-    <section class="flex-1 px-6 py-6 overflow-auto">
-        <h1 class="text-2xl font-bold mb-4 border-b-2 border-eink-black pb-2">Drafts</h1>
-        @await Html.PartialAsync("_List", Model.Items)
-    </section>
+    @await Html.PartialAsync("_List", listModel)
 </div>

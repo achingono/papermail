@@ -1,8 +1,8 @@
 @page
 @using Papermail.Web.Models
-@model Papermail.Web.Pages.SentModel
+@model Papermail.Web.Pages.DeletedModel
 @{
-    ViewData["Title"] = "Sent Items";
+    ViewData["Title"] = "Deleted Items";
     var listModel = new EmailListViewModel
     {
         Items = Model.Items,
@@ -11,7 +11,7 @@
         PageSize = Model.PageSize,
         SortDirection = Model.SortDirection,
         TotalPages = Model.TotalPages,
-        PageUrl = "/sent"
+        PageUrl = "/deleted"
     };
 }
 
