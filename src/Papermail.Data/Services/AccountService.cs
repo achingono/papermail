@@ -2,6 +2,7 @@ namespace Papermail.Data.Services;
 
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Papermail.Core.Entities;
 
 /// <summary>
@@ -10,14 +11,17 @@ using Papermail.Core.Entities;
 public class AccountService : IAccountService
 {
     private readonly DataContext _context;
+    private readonly ILogger<AccountService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AccountService"/> class.
     /// </summary>
     /// <param name="context">The database context for account operations.</param>
-    public AccountService(DataContext context)
+    /// <param name="logger">The logger for logging account operations.</param>
+    public AccountService(DataContext context, ILogger<AccountService> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     /// <summary>
@@ -33,14 +37,17 @@ public class AccountService : IAccountService
         var sub = principal.Id();
         if (string.IsNullOrWhiteSpace(sub))
         {
+            _logger.LogWarning("EnsureAccountAsync called with principal missing 'sub' claim");
             throw new ArgumentException("The ClaimsPrincipal does not contain a valid 'sub' claim.");
         }
 
+        _logger.LogDebug("Ensuring account exists for user {UserId}", sub);
         var account = await _context.Accounts
             .FirstOrDefaultAsync(a => a.UserId == sub);
 
         if (account == null && createIfNotExists)
         {
+            _logger.LogInformation("Account not found for user {UserId}, creating new account", sub);
             var identityProvider = principal.Claims
                             .FirstOrDefault(c => c.Type == "idp")?.Value;
             var provider = await _context.Providers
@@ -48,6 +55,7 @@ public class AccountService : IAccountService
 
             if (provider == null)
             {
+                _logger.LogInformation("Provider {ProviderName} not found, creating new provider", identityProvider ?? "Unknown");
                 provider = new Provider
                 {
                     Name = identityProvider ?? "Unknown"
@@ -67,6 +75,15 @@ public class AccountService : IAccountService
 
             _context.Accounts.Add(account);
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Created new account for user {UserId} with email {Email}", sub, account.EmailAddress);
+        }
+        else if (account != null)
+        {
+            _logger.LogDebug("Account found for user {UserId}", sub);
+        }
+        else
+        {
+            _logger.LogWarning("Account not found for user {UserId} and createIfNotExists is false", sub);
         }
 
         return account!;
