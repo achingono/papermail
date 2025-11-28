@@ -43,7 +43,7 @@ public class TokenService : ITokenService
     {
         _logger.LogDebug("GetAccessTokenAsync called for user {UserId}", userId);
         
-        var account = await _dbContext.Accounts.FindAsync(new object[] { userId }, cancellationToken: ct);
+        var account = await _dbContext.Accounts.SingleOrDefaultAsync(a => a.UserId == userId, cancellationToken: ct);
         if (account == null)
         {
             _logger.LogWarning("Account not found for user {UserId}", userId);
@@ -114,7 +114,7 @@ public class TokenService : ITokenService
     {
         _logger.LogDebug("GetRefreshTokenAsync called for user {UserId}", userId);
         
-        var account = await _dbContext.Accounts.FindAsync(new object[] { userId }, cancellationToken: ct);
+        var account = await _dbContext.Accounts.SingleOrDefaultAsync(a => a.UserId == userId, cancellationToken: ct);
         if (account == null)
         {
             _logger.LogWarning("Account not found for user {UserId}", userId);

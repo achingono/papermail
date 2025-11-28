@@ -13,7 +13,7 @@ public class Provider: IEntity
     /// Gets or sets the unique identifier for the provider.
     /// </summary>
     [Key]
-    public Guid Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
     /// Gets or sets the name of the email service provider.

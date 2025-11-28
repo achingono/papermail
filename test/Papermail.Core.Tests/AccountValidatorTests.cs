@@ -19,15 +19,10 @@ public class AccountValidatorTests
     [Fact]
     public void Should_Have_Error_When_UserId_Is_Empty()
     {
-        // Arrange
         var account = new Account { UserId = string.Empty };
-
-        // Act
         var result = _validator.TestValidate(account);
-
-        // Assert
         result.ShouldHaveValidationErrorFor(a => a.UserId)
-            .WithErrorMessage("User ID is required");
+            .WithErrorMessage("'User ID' must not be empty.");
     }
 
     [Fact]
@@ -50,36 +45,28 @@ public class AccountValidatorTests
     [Fact]
     public void Should_Have_Error_When_EmailAddress_Is_Invalid()
     {
-        // Arrange
         var account = new Account 
         { 
             UserId = "test-user-id", 
             EmailAddress = "not-an-email" 
         };
-
-        // Act
         var result = _validator.TestValidate(account);
-
-        // Assert
         result.ShouldHaveValidationErrorFor(a => a.EmailAddress)
-            .WithErrorMessage("Invalid email address format");
+            .WithErrorMessage("'Email Address' is not a valid email address.");
     }
 
     [Fact]
     public void Should_Not_Have_Error_When_Account_Is_Valid()
     {
-        // Arrange
+        var provider = new Provider { Name = "TestProvider" };
         var account = new Account 
         { 
             UserId = "test-user-id", 
             EmailAddress = "test@example.com",
-            Provider = new Provider { Name = "TestProvider" }
+            Provider = provider,
+            ProviderId = provider.Id
         };
-
-        // Act
         var result = _validator.TestValidate(account);
-
-        // Assert
         result.ShouldNotHaveAnyValidationErrors();
     }
 

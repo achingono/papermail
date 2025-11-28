@@ -10,7 +10,7 @@ namespace Papermail.Core.Entities;
 public class Account: IEntity
 {
     [Key]
-    public Guid Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required]
     public string UserId { get; set; } = string.Empty; // Entra sub
