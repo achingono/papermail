@@ -45,10 +45,18 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     /// <exception cref="AuthenticationException">Thrown when server doesn't support XOAUTH2.</exception>
     private async Task ConnectAndAuthenticateAsync(string username, string accessToken, CancellationToken ct)
     {
+        logger.LogDebug("ConnectAndAuthenticateAsync called for user {Username}", username);
+        
         if (settings == null)
+        {
+            logger.LogError("IMAP settings are null");
             throw new ArgumentNullException(nameof(settings));
+        }
         if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            logger.LogWarning("ConnectAndAuthenticateAsync called with empty access token for user {Username}", username);
             throw new ArgumentException("Access token or password is required", nameof(accessToken));
+        }
 
         if (!client.IsConnected)
         {
@@ -56,30 +64,39 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
             var secureSocketOptions = settings.Port == 993 
                 ? SecureSocketOptions.SslOnConnect 
                 : (settings.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
+            
+            logger.LogInformation("Connecting to IMAP server {Host}:{Port} with {SecurityMode}", 
+                settings.Host, settings.Port, secureSocketOptions);
             await client.ConnectAsync(settings.Host, settings.Port, secureSocketOptions, ct);
+            logger.LogInformation("Successfully connected to IMAP server {Host}:{Port}", settings.Host, settings.Port);
         }
 
         if (!client.IsAuthenticated)
         {
             var mechanisms = client.AuthenticationMechanisms;
+            logger.LogDebug("Available IMAP authentication mechanisms: {Mechanisms}", string.Join(", ", mechanisms));
             
             // Try OAuth2 first if supported
             if (mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
             {
                 try
                 {
+                    logger.LogDebug("Attempting OAuth2 authentication for user {Username}", username);
                     var oauth2 = new SaslMechanismOAuth2(username, accessToken);
                     await client.AuthenticateAsync(oauth2, ct);
+                    logger.LogInformation("Successfully authenticated via OAuth2 for user {Username}", username);
                     return;
                 }
                 catch (Exception ex)
                 {
-                    logger.LogWarning(ex, "OAuth2 authentication failed, falling back to basic auth");
+                    logger.LogWarning(ex, "OAuth2 authentication failed for user {Username}, falling back to basic auth", username);
                 }
             }
             
             // Fall back to basic authentication
+            logger.LogDebug("Attempting basic authentication for user {Username}", username);
             await client.AuthenticateAsync(username, accessToken, ct);
+            logger.LogInformation("Successfully authenticated via basic auth for user {Username}", username);
         }
     }
 
@@ -92,6 +109,8 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     /// <param name="ct">A token to cancel the operation.</param>
     public async Task DeleteAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default)
     {
+        logger.LogDebug("DeleteAsync called for user {Username}, emailId {EmailId}", username, emailId);
+        
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
 
         var inbox = client.Inbox;
@@ -101,9 +120,15 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
 
         if (index.HasValue)
         {
+            logger.LogDebug("Marking message at index {Index} as deleted", index.Value);
             // Mark as deleted and expunge immediately
             await inbox.AddFlagsAsync(index.Value, MessageFlags.Deleted, true, ct);
             await inbox.ExpungeAsync(ct);
+            logger.LogInformation("Successfully deleted email {EmailId} for user {Username}", emailId, username);
+        }
+        else
+        {
+            logger.LogWarning("Email {EmailId} not found for user {Username}", emailId, username);
         }
 
         await client.DisconnectAsync(true, ct);
@@ -163,15 +188,22 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     /// <returns>A collection of email messages.</returns>
     private async Task<IEnumerable<Email>> FetchEmailsFromFolderAsync(string username, string accessToken, MailKit.SpecialFolder specialFolder, int skip, int take, CancellationToken ct = default)
     {
+        logger.LogDebug("FetchEmailsFromFolderAsync called for user {Username}, folder {Folder}, skip {Skip}, take {Take}", 
+            username, specialFolder, skip, take);
+        
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
 
         var folder = specialFolder == MailKit.SpecialFolder.All 
             ? client.Inbox 
             : client.GetFolder(specialFolder);
+        
+        logger.LogDebug("Opening folder {FolderName} in ReadOnly mode", folder.FullName);
         await folder.OpenAsync(FolderAccess.ReadOnly, ct);
+        logger.LogDebug("Folder {FolderName} contains {Count} total messages", folder.FullName, folder.Count);
 
         var emails = new List<Email>();
         var messageCount = Math.Min(take, folder.Count - skip);
+        logger.LogDebug("Fetching {MessageCount} messages from folder {FolderName}", messageCount, folder.FullName);
 
         for (var i = skip; i < skip + messageCount; i++)
         {
@@ -179,6 +211,8 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
             emails.Add(MapToEmail(message));
         }
 
+        logger.LogInformation("Successfully fetched {Count} emails from folder {FolderName} for user {Username}", 
+            emails.Count, folder.FullName, username);
         await client.DisconnectAsync(true, ct);
         return emails;
     }
@@ -193,6 +227,8 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     /// <returns>The email message if found; otherwise, null.</returns>
     public async Task<Email?> GetEmailByIdAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default)
     {
+        logger.LogDebug("GetEmailByIdAsync called for user {Username}, emailId {EmailId}", username, emailId);
+        
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
 
         var inbox = client.Inbox;
@@ -200,7 +236,16 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
 
         await client.DisconnectAsync(true, ct);
 
-        return message != null ? MapToEmail(message) : null;
+        if (message != null)
+        {
+            logger.LogInformation("Successfully retrieved email {EmailId} for user {Username}", emailId, username);
+            return MapToEmail(message);
+        }
+        else
+        {
+            logger.LogWarning("Email {EmailId} not found for user {Username}", emailId, username);
+            return null;
+        }
     }
 
     /// <summary>
@@ -212,6 +257,8 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     /// <param name="ct">A token to cancel the operation.</param>
     public async Task MarkReadAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default)
     {
+        logger.LogDebug("MarkReadAsync called for user {Username}, emailId {EmailId}", username, emailId);
+        
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
 
         var inbox = client.Inbox;
@@ -222,6 +269,11 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         if (index.HasValue)
         {
             await inbox.AddFlagsAsync(index.Value, MessageFlags.Seen, true, ct);
+            logger.LogInformation("Successfully marked email {EmailId} as read for user {Username}", emailId, username);
+        }
+        else
+        {
+            logger.LogWarning("Email {EmailId} not found for user {Username}", emailId, username);
         }
 
         await client.DisconnectAsync(true, ct);
@@ -236,6 +288,8 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     /// <param name="ct">A token to cancel the operation.</param>
     public async Task SaveDraftAsync(string username, string accessToken, Email draft, CancellationToken ct = default)
     {
+        logger.LogDebug("SaveDraftAsync called for user {Username}, subject: {Subject}", username, draft.Subject);
+        
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
 
         // Get or create Drafts folder
@@ -247,6 +301,8 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
 
         // Append to Drafts folder
         await drafts.AppendAsync(message, MessageFlags.Draft, ct);
+        logger.LogInformation("Successfully saved draft to Drafts folder for user {Username}, subject: {Subject}", 
+            username, draft.Subject);
 
         await client.DisconnectAsync(true, ct);
     }
@@ -260,6 +316,8 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     /// <param name="ct">A token to cancel the operation.</param>
     public async Task SaveToSentAsync(string username, string accessToken, Email email, CancellationToken ct = default)
     {
+        logger.LogDebug("SaveToSentAsync called for user {Username}, subject: {Subject}", username, email.Subject);
+        
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
 
         // Get or create Sent folder
@@ -271,6 +329,8 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
 
         // Append to Sent folder with Seen flag (already read)
         await sent.AppendAsync(message, MessageFlags.Seen, ct);
+        logger.LogInformation("Successfully saved email to Sent folder for user {Username}, subject: {Subject}", 
+            username, email.Subject);
 
         await client.DisconnectAsync(true, ct);
     }

@@ -44,40 +44,57 @@ public class SmtpClient : Papermail.Data.Clients.ISmtpClient
     /// <exception cref="ArgumentException">Thrown when access token is empty.</exception>
     private async Task ConnectAndAuthenticateAsync(string username, string accessToken, CancellationToken ct)
     {
+        logger.LogDebug("ConnectAndAuthenticateAsync called for user {Username}", username);
+        
         if (settings == null)
+        {
+            logger.LogError("SMTP settings are null");
             throw new ArgumentNullException(nameof(settings));
+        }
         if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            logger.LogWarning("ConnectAndAuthenticateAsync called with empty access token for user {Username}", username);
             throw new ArgumentException("Access token or password is required", nameof(accessToken));
+        }
 
         if (!client.IsConnected)
         {
             var secureSocketOptions = settings.UseTls 
                 ? SecureSocketOptions.StartTls 
                 : SecureSocketOptions.None;
+            
+            logger.LogInformation("Connecting to SMTP server {Host}:{Port} with {SecurityMode}", 
+                settings.Host, settings.Port, secureSocketOptions);
             await client.ConnectAsync(settings.Host, settings.Port, secureSocketOptions, ct);
+            logger.LogInformation("Successfully connected to SMTP server {Host}:{Port}", settings.Host, settings.Port);
         }
 
         if (!client.IsAuthenticated)
         {
             var mechanisms = client.AuthenticationMechanisms;
+            logger.LogDebug("Available SMTP authentication mechanisms: {Mechanisms}", string.Join(", ", mechanisms));
             
             // Try OAuth2 first if supported
             if (mechanisms.Contains("XOAUTH2", StringComparer.OrdinalIgnoreCase))
             {
                 try
                 {
+                    logger.LogDebug("Attempting OAuth2 authentication for user {Username}", username);
                     var oauth2 = new SaslMechanismOAuth2(username, accessToken);
                     await client.AuthenticateAsync(oauth2, ct);
+                    logger.LogInformation("Successfully authenticated via OAuth2 for user {Username}", username);
                     return;
                 }
                 catch (Exception ex)
                 {
-                    logger.LogWarning(ex, "OAuth2 authentication failed, falling back to basic auth");
+                    logger.LogWarning(ex, "OAuth2 authentication failed for user {Username}, falling back to basic auth", username);
                 }
             }
             
             // Fall back to basic authentication
+            logger.LogDebug("Attempting basic authentication for user {Username}", username);
             await client.AuthenticateAsync(username, accessToken, ct);
+            logger.LogInformation("Successfully authenticated via basic auth for user {Username}", username);
         }
     }
 
@@ -90,9 +107,16 @@ public class SmtpClient : Papermail.Data.Clients.ISmtpClient
     /// <param name="ct">A token to cancel the operation.</param>
     public async Task SendEmailAsync(string username, string accessToken, Email email, CancellationToken ct = default)
     {
+        logger.LogDebug("SendEmailAsync called for user {Username}, subject: {Subject}, recipients: {Recipients}", 
+            username, email.Subject, string.Join(", ", email.To.Select(t => t.Value)));
+        
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
         var message = CreateMimeMessage(email);
+        
+        logger.LogInformation("Sending email via SMTP for user {Username}, subject: {Subject}", username, email.Subject);
         await client.SendAsync(message, ct);
+        logger.LogInformation("Successfully sent email via SMTP for user {Username}, subject: {Subject}", username, email.Subject);
+        
         await client.DisconnectAsync(true, ct);
     }
     
