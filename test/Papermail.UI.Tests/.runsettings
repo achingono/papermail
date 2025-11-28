@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <!-- Set to true when running against local Docker environment -->
+      <RUN_UI_TESTS>false</RUN_UI_TESTS>
+      <PLAYWRIGHT_BROWSERS_PATH>0</PLAYWRIGHT_BROWSERS_PATH>
+    </EnvironmentVariables>
+  </RunConfiguration>
+  <Playwright>
+    <BrowserName>chromium</BrowserName>
+    <LaunchOptions>
+      <Headless>true</Headless>
+      <SlowMo>0</SlowMo>
+    </LaunchOptions>
+  </Playwright>
+</RunSettings>

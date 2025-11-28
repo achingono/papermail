@@ -126,7 +126,7 @@ services:
       - CLIENT_ID=${OIDC_CLIENTID:-a92e2069-b509-450b-a9e8-d73cead8735a}
       - CLIENT_SECRET=${OIDC_CLIENTSECRET:-YTkyZTIwNjktYjUwOS00NTBiLWE5ZTgtZDczY2VhZDg3MzVh}
       - REDIRECT_URIS=https://${CLIENT_DOMAIN:-papermail.local}/signin-oidc
-      - POST_LOGOUT_REDIRECT_URIS=https://${CLIENT_DOMAIN:-papermail.local}/signout-oidc
+      - POST_LOGOUT_REDIRECT_URIS=https://${CLIENT_DOMAIN:-papermail.local}/signout-callback-oidc,https://${CLIENT_DOMAIN:-papermail.local}/signout-oidc,https://${CLIENT_DOMAIN:-papermail.local}/
       - COOKIE_KEYS=${OIDC_COOKIE_KEYS:-59761AB67FB5BA23BDD917B2F2E409394A848F50FA9CEB08860C73495339266E}
       # Override default users with known credentials
       - USERS=[{"id":"945dc90b-02ac-43e5-a4ab-2db744dce149","email":"admin@papermail.local","email_verified":true,"name":"Administrator Account","nickname":"admin","given_name":"Administrator","family_name":"Account","password":"P@ssw0rd","groups":["Everyone","Administrators"]},{"id":"a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d","email":"user@papermail.local","email_verified":true,"name":"User Account","nickname":"user","given_name":"User","family_name":"Account","password":"P@ssw0rd","groups":["Everyone"]}]

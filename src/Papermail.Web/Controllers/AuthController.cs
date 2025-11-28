@@ -114,4 +114,21 @@ public class AuthController : ControllerBase
             }
         }
     }
+
+    /// <summary>
+    /// Handles logout by signing out of both cookie and OIDC authentication.
+    /// </summary>
+    [HttpGet("logout")]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        // Sign out of cookie authentication
+        await HttpContext.SignOutAsync("Cookies");
+        
+        // Sign out of OpenID Connect which will redirect to OIDC provider's logout
+        return SignOut(new AuthenticationProperties
+        {
+            RedirectUri = "/"
+        }, "OpenIdConnect");
+    }
 }
