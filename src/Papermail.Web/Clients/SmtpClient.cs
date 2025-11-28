@@ -9,11 +9,21 @@ using Papermail.Core.Entities;
 
 namespace Papermail.Web.Clients;
 
+/// <summary>
+/// Provides SMTP client functionality for sending email messages.
+/// Implements OAuth2 authentication for secure access to email servers.
+/// </summary>
 public class SmtpClient : Papermail.Data.Clients.ISmtpClient
 {
     private readonly MailKit.Net.Smtp.SmtpClient client = new MailKit.Net.Smtp.SmtpClient();
     private readonly SmtpSettings settings;
     private readonly ILogger<SmtpClient> logger;
+    
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SmtpClient"/> class.
+    /// </summary>
+    /// <param name="options">The SMTP configuration settings.</param>
+    /// <param name="logger">The logger instance for logging operations.</param>
     public SmtpClient(IOptions<SmtpSettings> options, ILogger<SmtpClient> logger)
     {
         settings = options.Value;
@@ -24,6 +34,15 @@ public class SmtpClient : Papermail.Data.Clients.ISmtpClient
         }
     }
 
+    /// <summary>
+    /// Connects to the SMTP server and authenticates using OAuth2.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <exception cref="ArgumentNullException">Thrown when settings is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when access token is empty.</exception>
+    /// <exception cref="AuthenticationException">Thrown when server doesn't support XOAUTH2.</exception>
     private async Task ConnectAndAuthenticateAsync(string username, string accessToken, CancellationToken ct)
     {
         if (settings == null)
@@ -50,6 +69,13 @@ public class SmtpClient : Papermail.Data.Clients.ISmtpClient
         }
     }
 
+    /// <summary>
+    /// Sends an email message using the SMTP protocol.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="email">The email message to send.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
     public async Task SendEmailAsync(string username, string accessToken, Email email, CancellationToken ct = default)
     {
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
@@ -58,6 +84,11 @@ public class SmtpClient : Papermail.Data.Clients.ISmtpClient
         await client.DisconnectAsync(true, ct);
     }
     
+    /// <summary>
+    /// Creates a MimeMessage from an Email entity, converting the domain model to MIME format.
+    /// </summary>
+    /// <param name="email">The email entity to convert.</param>
+    /// <returns>A MimeMessage ready to be sent via SMTP.</returns>
     internal static MimeMessage CreateMimeMessage(Email email)
     {
         var message = new MimeMessage();

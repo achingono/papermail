@@ -9,12 +9,21 @@ using Papermail.Core.Entities;
 
 namespace Papermail.Web.Clients;
 
+/// <summary>
+/// Provides IMAP client functionality for fetching, managing, and manipulating email messages.
+/// Implements OAuth2 authentication for secure access to email servers.
+/// </summary>
 public class ImapClient : Papermail.Data.Clients.IImapClient
 {
     private readonly MailKit.Net.Imap.ImapClient client = new MailKit.Net.Imap.ImapClient();
     private readonly ImapSettings settings;
     private readonly ILogger<ImapClient> logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ImapClient"/> class.
+    /// </summary>
+    /// <param name="options">The IMAP configuration settings.</param>
+    /// <param name="logger">The logger instance for logging operations.</param>
     public ImapClient(IOptions<ImapSettings> options, ILogger<ImapClient> logger)
     {
         settings = options.Value;
@@ -25,6 +34,15 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         }
     }
 
+    /// <summary>
+    /// Connects to the IMAP server and authenticates using OAuth2.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <exception cref="ArgumentNullException">Thrown when settings is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when access token is empty.</exception>
+    /// <exception cref="AuthenticationException">Thrown when server doesn't support XOAUTH2.</exception>
     private async Task ConnectAndAuthenticateAsync(string username, string accessToken, CancellationToken ct)
     {
         if (settings == null)
@@ -51,6 +69,13 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         }
     }
 
+    /// <summary>
+    /// Deletes an email message by marking it as deleted and expunging it from the mailbox.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="emailId">The unique identifier of the email to delete.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
     public async Task DeleteAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default)
     {
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
@@ -70,6 +95,15 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         await client.DisconnectAsync(true, ct);
     }
 
+    /// <summary>
+    /// Fetches a range of email messages from the inbox.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
     public async Task<IEnumerable<Email>> FetchEmailsAsync(string username, string accessToken, int skip, int take, CancellationToken ct = default)
     {
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
@@ -90,6 +124,14 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         return emails;
     }
 
+    /// <summary>
+    /// Retrieves a specific email message by its unique identifier.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="emailId">The unique identifier of the email to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>The email message if found; otherwise, null.</returns>
     public async Task<Email?> GetEmailByIdAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default)
     {
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
@@ -102,6 +144,13 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         return message != null ? MapToEmail(message) : null;
     }
 
+    /// <summary>
+    /// Marks an email message as read by setting the Seen flag.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="emailId">The unique identifier of the email to mark as read.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
     public async Task MarkReadAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default)
     {
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
@@ -119,6 +168,13 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         await client.DisconnectAsync(true, ct);
     }
 
+    /// <summary>
+    /// Saves an email message as a draft in the Drafts folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="draft">The email message to save as a draft.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
     public async Task SaveDraftAsync(string username, string accessToken, Email draft, CancellationToken ct = default)
     {
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
@@ -136,6 +192,13 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         await client.DisconnectAsync(true, ct);
     }
 
+    /// <summary>
+    /// Maps a MimeMessage to an Email entity, creating a deterministic GUID from the Message-ID.
+    /// </summary>
+    /// <param name="message">The MIME message to map.</param>
+    /// <returns>An Email entity representing the MIME message.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when message is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when message has no sender.</exception>
     public static Email MapToEmail(MimeMessage message)
     {
         if (message == null)
@@ -177,6 +240,11 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         );
     }
 
+    /// <summary>
+    /// Creates a deterministic GUID from a string input using MD5 hashing.
+    /// </summary>
+    /// <param name="input">The input string (typically Message-ID).</param>
+    /// <returns>A GUID derived from the input string.</returns>
     private static Guid CreateDeterministicGuid(string input)
     {
         using var md5 = System.Security.Cryptography.MD5.Create();

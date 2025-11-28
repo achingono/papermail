@@ -2,11 +2,56 @@ namespace Papermail.Data.Clients;
 using Papermail.Core.Configuration;
 using Papermail.Core.Entities;
 
+/// <summary>
+/// Defines IMAP client operations for fetching and managing email messages.
+/// </summary>
 public interface IImapClient
 {
+    /// <summary>
+    /// Fetches a range of email messages from the inbox.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="skip">The number of messages to skip.</param>
+    /// <param name="take">The maximum number of messages to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A collection of email messages.</returns>
     Task<IEnumerable<Email>> FetchEmailsAsync(string username, string accessToken, int skip, int take, CancellationToken ct = default);
+    
+    /// <summary>
+    /// Saves an email message as a draft in the Drafts folder.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="draft">The email message to save as a draft.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
     Task SaveDraftAsync(string username, string accessToken, Email draft, CancellationToken ct = default);
+    
+    /// <summary>
+    /// Retrieves a specific email message by its unique identifier.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="emailId">The unique identifier of the email to retrieve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>The email message if found; otherwise, null.</returns>
     Task<Email?> GetEmailByIdAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default);
+    
+    /// <summary>
+    /// Marks an email message as read by setting the Seen flag.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="emailId">The unique identifier of the email to mark as read.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
     Task MarkReadAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default);
+    
+    /// <summary>
+    /// Deletes an email message by marking it as deleted and expunging it.
+    /// </summary>
+    /// <param name="username">The username for authentication.</param>
+    /// <param name="accessToken">The OAuth2 access token.</param>
+    /// <param name="emailId">The unique identifier of the email to delete.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
     Task DeleteAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default);
 }
