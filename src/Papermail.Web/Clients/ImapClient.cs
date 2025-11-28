@@ -592,4 +592,68 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
 
         return null;
     }
+
+    public async Task MoveToArchiveAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default)
+    {
+        logger.LogDebug("MoveToArchiveAsync called for user {Username}, emailId {EmailId}", username, emailId);
+        
+        await ConnectAndAuthenticateAsync(username, accessToken, ct);
+
+        // Get source folder (inbox)
+        var inbox = client.Inbox;
+        await inbox.OpenAsync(FolderAccess.ReadWrite, ct);
+
+        var index = await FindMessageIndexByIdAsync(inbox, emailId, ct);
+
+        if (index.HasValue)
+        {
+            // Get or create Archive folder
+            var archive = client.GetFolder(MailKit.SpecialFolder.Archive);
+            
+            logger.LogDebug("Moving message at index {Index} to Archive", index.Value);
+            
+            // Move the message (copy + delete original)
+            await inbox.MoveToAsync(index.Value, archive, ct);
+            
+            logger.LogInformation("Successfully moved email {EmailId} to Archive for user {Username}", emailId, username);
+        }
+        else
+        {
+            logger.LogWarning("Email {EmailId} not found in inbox for user {Username}", emailId, username);
+        }
+
+        await client.DisconnectAsync(true, ct);
+    }
+
+    public async Task MoveToJunkAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default)
+    {
+        logger.LogDebug("MoveToJunkAsync called for user {Username}, emailId {EmailId}", username, emailId);
+        
+        await ConnectAndAuthenticateAsync(username, accessToken, ct);
+
+        // Get source folder (inbox)
+        var inbox = client.Inbox;
+        await inbox.OpenAsync(FolderAccess.ReadWrite, ct);
+
+        var index = await FindMessageIndexByIdAsync(inbox, emailId, ct);
+
+        if (index.HasValue)
+        {
+            // Get or create Junk folder
+            var junk = client.GetFolder(MailKit.SpecialFolder.Junk);
+            
+            logger.LogDebug("Moving message at index {Index} to Junk", index.Value);
+            
+            // Move the message (copy + delete original)
+            await inbox.MoveToAsync(index.Value, junk, ct);
+            
+            logger.LogInformation("Successfully moved email {EmailId} to Junk for user {Username}", emailId, username);
+        }
+        else
+        {
+            logger.LogWarning("Email {EmailId} not found in inbox for user {Username}", emailId, username);
+        }
+
+        await client.DisconnectAsync(true, ct);
+    }
 }

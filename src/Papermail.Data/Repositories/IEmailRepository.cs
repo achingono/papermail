@@ -137,4 +137,14 @@ public interface IEmailRepository
     /// Gets total message count in the Archive folder.
     /// </summary>
     Task<int> GetArchiveCountAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Moves an email to the Archive folder.
+    /// </summary>
+    Task MoveToArchiveAsync(Guid id, string userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Moves an email to the Junk folder.
+    /// </summary>
+    Task MoveToJunkAsync(Guid id, string userId, CancellationToken ct = default);
 }

@@ -7,12 +7,13 @@ namespace Papermail.Data.Models;
 public class EmailModel
 {
     public Guid Id { get; set; }
-    public string From { get; set; } = string.Empty;
-    public List<string> To { get; set; } = new();
+    public EmailAddressModel From { get; set; } = new();
+    public List<EmailAddressModel> To { get; set; } = new();
+    public List<EmailAddressModel> Cc { get; set; } = new();
     public string Subject { get; set; } = string.Empty;
-    public string? BodyPlain { get; set; }
-    public string? BodyHtml { get; set; }
-    public DateTime ReceivedAt { get; set; }
+    public string Body { get; set; } = string.Empty;
+    public string? HtmlBody { get; set; }
+    public DateTimeOffset Date { get; set; }
     public bool IsRead { get; set; }
     public List<AttachmentModel> Attachments { get; set; } = new();
 }

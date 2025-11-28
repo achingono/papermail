@@ -386,4 +386,32 @@ public class EmailService : IEmailService
             throw new ArgumentException("User ID is required", nameof(userId));
         return await _emailRepository.GetJunkCountAsync(userId);
     }
+
+    public async Task MoveToArchiveAsync(Guid emailId, string userId)
+    {
+        _logger.LogDebug("MoveToArchiveAsync called for emailId {EmailId}, userId {UserId}", emailId, userId);
+        
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            _logger.LogWarning("MoveToArchiveAsync called with null or empty userId");
+            throw new ArgumentException("User ID is required", nameof(userId));
+        }
+
+        await _emailRepository.MoveToArchiveAsync(emailId, userId);
+        _logger.LogInformation("Moved email {EmailId} to Archive for user {UserId}", emailId, userId);
+    }
+
+    public async Task MoveToJunkAsync(Guid emailId, string userId)
+    {
+        _logger.LogDebug("MoveToJunkAsync called for emailId {EmailId}, userId {UserId}", emailId, userId);
+        
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            _logger.LogWarning("MoveToJunkAsync called with null or empty userId");
+            throw new ArgumentException("User ID is required", nameof(userId));
+        }
+
+        await _emailRepository.MoveToJunkAsync(emailId, userId);
+        _logger.LogInformation("Moved email {EmailId} to Junk for user {UserId}", emailId, userId);
+    }
 }

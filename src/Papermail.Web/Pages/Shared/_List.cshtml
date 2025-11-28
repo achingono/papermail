@@ -59,7 +59,7 @@
                 {
                     foreach (var item in Model.Items)
                     {
-                        <tr class="hover:bg-slate-100 cursor-pointer">
+                        <tr class="hover:bg-slate-100 cursor-pointer" onclick="window.location.href='/email/@item.Id?returnUrl=@Model.PageUrl'">
                             <td class="p-4 @(item.IsRead ? "text-slate-700" : "font-bold text-blue-800")">
                                 @item.From
                             </td>

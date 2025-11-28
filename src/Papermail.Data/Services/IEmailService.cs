@@ -72,4 +72,14 @@ public interface IEmailService
     /// Deletes an email by ID.
     /// </summary>
     Task DeleteEmailAsync(Guid emailId, string userId);
+
+    /// <summary>
+    /// Moves an email to the Archive folder.
+    /// </summary>
+    Task MoveToArchiveAsync(Guid emailId, string userId);
+
+    /// <summary>
+    /// Moves an email to the Junk folder.
+    /// </summary>
+    Task MoveToJunkAsync(Guid emailId, string userId);
 }

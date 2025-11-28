@@ -36,12 +36,13 @@ public static class EmailMapper
         return new EmailModel
         {
             Id = email.Id,
-            From = email.From.Value,
-            To = email.To.Select(e => e.Value).ToList(),
+            From = new EmailAddressModel { Name = email.From.Value, Address = email.From.Value },
+            To = email.To.Select(e => new EmailAddressModel { Name = e.Value, Address = e.Value }).ToList(),
+            Cc = new List<EmailAddressModel>(), // TODO: Extract from email entity if available
             Subject = email.Subject,
-            BodyPlain = email.BodyPlain,
-            BodyHtml = email.BodyHtml,
-            ReceivedAt = email.ReceivedAt.DateTime,
+            Body = email.BodyPlain ?? string.Empty,
+            HtmlBody = email.BodyHtml,
+            Date = email.ReceivedAt,
             IsRead = email.IsRead,
             Attachments = email.Attachments.Select(ToAttachmentModel).ToList()
         };

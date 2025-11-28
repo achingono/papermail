@@ -61,13 +61,13 @@ public class EmailMapperTests
         var result = EmailMapper.ToDetailDto(email);
 
         Assert.Equal(email.Id, result.Id);
-        Assert.Equal("sender@test.com", result.From);
+        Assert.Equal("sender@test.com", result.From.Address);
         Assert.Equal(2, result.To.Count);
-        Assert.Contains("r1@test.com", result.To);
-        Assert.Contains("r2@test.com", result.To);
+        Assert.Contains(result.To, t => t.Address == "r1@test.com");
+        Assert.Contains(result.To, t => t.Address == "r2@test.com");
         Assert.Equal("Subject", result.Subject);
-        Assert.Equal("Plain body", result.BodyPlain);
-        Assert.Equal("<p>HTML body</p>", result.BodyHtml);
+        Assert.Equal("Plain body", result.Body);
+        Assert.Equal("<p>HTML body</p>", result.HtmlBody);
     }
 
     [Fact]

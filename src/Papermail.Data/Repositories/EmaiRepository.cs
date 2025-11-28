@@ -435,4 +435,26 @@ public sealed class EmailRepository : IEmailRepository
             return 0;
         }
     }
+
+    public async Task MoveToArchiveAsync(Guid id, string userId, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+        
+        await _imapClient.MoveToArchiveAsync(credentials.Username, credentials.AccessToken, id, ct);
+    }
+
+    public async Task MoveToJunkAsync(Guid id, string userId, CancellationToken ct = default)
+    {
+        var credentials = await _tokenService.GetCredentialsAsync(userId, ct);
+        if (credentials.Username == null)
+            throw new InvalidOperationException("No username available");
+        if (credentials.AccessToken == null)
+            throw new InvalidOperationException("No access token available");
+        
+        await _imapClient.MoveToJunkAsync(credentials.Username, credentials.AccessToken, id, ct);
+    }
 }

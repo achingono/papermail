@@ -148,4 +148,14 @@ public interface IImapClient
     /// Gets total message count in the Archive folder.
     /// </summary>
     Task<int> GetArchiveCountAsync(string username, string accessToken, CancellationToken ct = default);
+
+    /// <summary>
+    /// Moves an email to the Archive folder.
+    /// </summary>
+    Task MoveToArchiveAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Moves an email to the Junk folder.
+    /// </summary>
+    Task MoveToJunkAsync(string username, string accessToken, Guid emailId, CancellationToken ct = default);
 }
