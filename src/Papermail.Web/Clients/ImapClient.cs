@@ -262,6 +262,22 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     {
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
         var junk = client.GetFolder(MailKit.SpecialFolder.Junk);
+        
+        // If Junk special folder doesn't exist, try to get it by name or create it
+        if (junk == null)
+        {
+            logger.LogDebug("Junk special folder not found, attempting to get by name");
+            var personal = client.GetFolder(client.PersonalNamespaces[0]);
+            junk = await personal.GetSubfolderAsync("Junk", ct);
+            
+            if (junk == null)
+            {
+                logger.LogInformation("Creating Junk folder for user {Username}", username);
+                junk = await personal.CreateAsync("Junk", true, ct);
+                await junk.SubscribeAsync(ct);
+            }
+        }
+        
         await junk.OpenAsync(FolderAccess.ReadOnly, ct);
         var count = junk.Count;
         await client.DisconnectAsync(true, ct);
@@ -273,12 +289,19 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         await ConnectAndAuthenticateAsync(username, accessToken, ct);
         var archive = client.GetFolder(MailKit.SpecialFolder.Archive);
 
+        // If Archive special folder doesn't exist, try to get it by name or create it
         if (archive == null)
         {
-            logger.LogWarning("Folder {Folder} not found for user {Username}", MailKit.SpecialFolder.Archive, username);
-            // create folder
-            await client.GetFolder(client.PersonalNamespaces[0]).CreateAsync(MailKit.SpecialFolder.Archive.ToString(), true, ct);
-            return 0;
+            logger.LogDebug("Archive special folder not found, attempting to get by name");
+            var personal = client.GetFolder(client.PersonalNamespaces[0]);
+            archive = await personal.GetSubfolderAsync("Archive", ct);
+            
+            if (archive == null)
+            {
+                logger.LogInformation("Creating Archive folder for user {Username}", username);
+                archive = await personal.CreateAsync("Archive", true, ct);
+                await archive.SubscribeAsync(ct);
+            }
         }        
         
         await archive.OpenAsync(FolderAccess.ReadOnly, ct);
@@ -308,12 +331,20 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
             ? client.Inbox 
             : client.GetFolder(specialFolder);
 
+        // If special folder doesn't exist, try to get it by name or create it
         if (folder == null)
         {
-            logger.LogWarning("Folder {Folder} not found for user {Username}", specialFolder, username);
-            // create folder
-            await client.GetFolder(client.PersonalNamespaces[0]).CreateAsync(specialFolder.ToString(), true, ct);
-            return Enumerable.Empty<Email>();
+            logger.LogDebug("{Folder} special folder not found, attempting to get by name", specialFolder);
+            var folderName = specialFolder.ToString();
+            var personal = client.GetFolder(client.PersonalNamespaces[0]);
+            folder = await personal.GetSubfolderAsync(folderName, ct);
+            
+            if (folder == null)
+            {
+                logger.LogInformation("Creating {Folder} folder for user {Username}", folderName, username);
+                folder = await personal.CreateAsync(folderName, true, ct);
+                await folder.SubscribeAsync(ct);
+            }
         }
         
         logger.LogDebug("Opening folder {FolderName} in ReadOnly mode", folder.FullName);
@@ -610,6 +641,21 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
             // Get or create Archive folder
             var archive = client.GetFolder(MailKit.SpecialFolder.Archive);
             
+            // If Archive special folder doesn't exist, try to get it by name or create it
+            if (archive == null)
+            {
+                logger.LogDebug("Archive special folder not found, attempting to get by name");
+                var personal = client.GetFolder(client.PersonalNamespaces[0]);
+                archive = await personal.GetSubfolderAsync("Archive", ct);
+                
+                if (archive == null)
+                {
+                    logger.LogInformation("Creating Archive folder for user {Username}", username);
+                    archive = await personal.CreateAsync("Archive", true, ct);
+                    await archive.SubscribeAsync(ct);
+                }
+            }
+            
             logger.LogDebug("Moving message at index {Index} to Archive", index.Value);
             
             // Move the message (copy + delete original)
@@ -641,6 +687,21 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
         {
             // Get or create Junk folder
             var junk = client.GetFolder(MailKit.SpecialFolder.Junk);
+            
+            // If Junk special folder doesn't exist, try to get it by name or create it
+            if (junk == null)
+            {
+                logger.LogDebug("Junk special folder not found, attempting to get by name");
+                var personal = client.GetFolder(client.PersonalNamespaces[0]);
+                junk = await personal.GetSubfolderAsync("Junk", ct);
+                
+                if (junk == null)
+                {
+                    logger.LogInformation("Creating Junk folder for user {Username}", username);
+                    junk = await personal.CreateAsync("Junk", true, ct);
+                    await junk.SubscribeAsync(ct);
+                }
+            }
             
             logger.LogDebug("Moving message at index {Index} to Junk", index.Value);
             

@@ -22,12 +22,12 @@
                                     <a href="@Model.PageUrl?page=0&pageSize=@Model.PageSize&sort=@Model.SortDirection" 
                                        class="px-2 py-1 border-2 border-slate-950 hover:bg-slate-100 @(Model.CurrentPage == 0 ? "opacity-50" : "")"
                                        title="First Page">
-                                        ≪
+                                        &#xab;
                                     </a>
                                     <a href="@Model.PageUrl?page=@Math.Max(0, Model.CurrentPage - 1)&pageSize=@Model.PageSize&sort=@Model.SortDirection" 
                                        class="px-2 py-1 border-2 border-slate-950 hover:bg-slate-100 @(Model.CurrentPage == 0 ? "opacity-50" : "")"
                                        title="Previous Page">
-                                        ‹
+                                        &#8249;
                                     </a>
                                     <span class="px-3 py-1 text-sm">
                                         @(Model.CurrentPage + 1) / @Math.Max(1, Model.TotalPages)
@@ -35,12 +35,17 @@
                                     <a href="@Model.PageUrl?page=@Math.Min(Model.TotalPages - 1, Model.CurrentPage + 1)&pageSize=@Model.PageSize&sort=@Model.SortDirection" 
                                        class="px-2 py-1 border-2 border-slate-950 hover:bg-slate-100 @(Model.CurrentPage >= Model.TotalPages - 1 ? "opacity-50" : "")"
                                        title="Next Page">
-                                        ›
+                                        &#8250;
                                     </a>
                                     <a href="@Model.PageUrl?page=@Math.Max(0, Model.TotalPages - 1)&pageSize=@Model.PageSize&sort=@Model.SortDirection" 
                                        class="px-2 py-1 border-2 border-slate-950 hover:bg-slate-100 @(Model.CurrentPage >= Model.TotalPages - 1 ? "opacity-50" : "")"
                                        title="Last Page">
-                                        ≫
+                                        &#xbb;
+                                    </a>
+                                    <a href="/compose" 
+                                       class="ml-4 px-3 py-1 border-2 border-slate-950 hover:bg-slate-100 font-bold"
+                                       title="Compose New Email">
+                                        + New Email
                                     </a>
                                 </div>
                             </div>
