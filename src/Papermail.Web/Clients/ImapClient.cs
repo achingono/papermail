@@ -24,9 +24,9 @@ public class ImapClient : Papermail.Data.Clients.IImapClient
     /// </summary>
     /// <param name="options">The IMAP configuration settings.</param>
     /// <param name="logger">The logger instance for logging operations.</param>
-    public ImapClient(IOptions<ImapSettings> options, ILogger<ImapClient> logger)
+    public ImapClient(ImapSettings settings, ILogger<ImapClient> logger)
     {
-        settings = options.Value;
+        this.settings = settings;
         this.logger = logger;
         if (settings.TrustCertificates)
         {

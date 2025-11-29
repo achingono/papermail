@@ -427,3 +427,6 @@ coverage_report/
 docker/mailserver/config/
 
 .playwright-mcp/
+
+# Automatically generated CSS files
+src/Papermail.Web/wwwroot/css/styles.css

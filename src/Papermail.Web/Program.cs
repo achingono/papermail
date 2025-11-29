@@ -11,6 +11,7 @@ using Papermail.Data.Repositories;
 using Papermail.Web.Clients;
 using Papermail.Data.Clients;
 using Papermail.Core.Configuration;
+using System.Security.Claims;
 
 // Create the web application builder
 var builder = WebApplication.CreateBuilder(args);
@@ -25,21 +26,42 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// Configure SMTP settings from configuration
+// Configure Default SMTP settings from configuration
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
 
-// Configure IMAP settings from configuration
+// Configure Default IMAP settings from configuration
 builder.Services.Configure<ImapSettings>(builder.Configuration.GetSection("Imap"));
 
 builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.TryAddSingleton<IPrincipalAccessor, PrincipalAccessor>();
 builder.Services.TryAddScoped<IPrincipal>(provider => provider.GetRequiredService<IPrincipalAccessor>().Principal!);
+builder.Services.TryAddScoped<IProviderService, ProviderService>();
 builder.Services.TryAddScoped<IAccountService, AccountService>();
 builder.Services.TryAddScoped<IEmailService, EmailService>();
 builder.Services.TryAddScoped<ITokenService, TokenService>();
 builder.Services.TryAddScoped<IEmailRepository, EmailRepository>();
 builder.Services.TryAddScoped<IImapClient, ImapClient>();
 builder.Services.TryAddScoped<ISmtpClient, SmtpClient>();
+builder.Services.TryAddScoped<ImapSettings>(provider =>
+{
+    var principalAccessor = provider.GetRequiredService<IPrincipalAccessor>();
+    var email = (principalAccessor.Principal as ClaimsPrincipal)?.Email() ?? string.Empty;
+    var service = provider.GetRequiredService<IProviderService>();
+    var entity = service.GetByDomainAsync(email.Split('@').LastOrDefault() ?? string.Empty).GetAwaiter().GetResult();
+    return entity?.Imap ?? 
+            provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ImapSettings>>().Value ?? 
+            new ImapSettings();
+});
+builder.Services.TryAddScoped<SmtpSettings>(provider =>
+{
+    var principalAccessor = provider.GetRequiredService<IPrincipalAccessor>();
+    var email = (principalAccessor.Principal as ClaimsPrincipal)?.Email() ?? string.Empty;
+    var service = provider.GetRequiredService<IProviderService>();
+    var entity = service.GetByDomainAsync(email.Split('@').LastOrDefault() ?? string.Empty).GetAwaiter().GetResult();
+    return entity?.Smtp ?? 
+            provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<SmtpSettings>>().Value ?? 
+            new SmtpSettings();
+});
 
 builder.Services.AddDataProtection();
 

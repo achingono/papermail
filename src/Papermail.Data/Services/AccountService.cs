@@ -3,6 +3,7 @@ namespace Papermail.Data.Services;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Papermail.Core.Configuration;
 using Papermail.Core.Entities;
 
 /// <summary>
@@ -34,58 +35,41 @@ public class AccountService : IAccountService
     /// <exception cref="ArgumentException">Thrown when the principal doesn't contain a valid 'sub' claim.</exception>
     public async Task<Account> EnsureAccountAsync(ClaimsPrincipal principal, Action<Account> updateAccount, bool createIfNotExists = false)
     {
-        var sub = principal.Id();
-        if (string.IsNullOrWhiteSpace(sub))
+        var userId = principal.Id();
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("Missing sub claim", nameof(principal));
+
+        var existing = await _context.Accounts.FirstOrDefaultAsync(a => a.UserId == userId);
+        if (existing != null)
+            return existing;
+
+        if (!createIfNotExists)
+            return null!;
+
+        var email = principal.Email();
+        var identityProvider = principal.Claims.FirstOrDefault(c => c.Type == "idp")?.Value;
+        var domain = email?.Split('@').LastOrDefault() ?? "unknown.local";
+
+        // Resolve provider (by idp name first, then domain)
+        var providerService = new ProviderService(_context); // TODO: inject
+        var provider = await providerService.GetOrCreateProviderAsync(domain, identityProvider, new ImapSettings(), new SmtpSettings());
+        if (!string.IsNullOrWhiteSpace(identityProvider) && provider.Name != identityProvider)
         {
-            _logger.LogWarning("EnsureAccountAsync called with principal missing 'sub' claim");
-            throw new ArgumentException("The ClaimsPrincipal does not contain a valid 'sub' claim.");
-        }
-
-        _logger.LogDebug("Ensuring account exists for user {UserId}", sub);
-        var account = await _context.Accounts
-            .FirstOrDefaultAsync(a => a.UserId == sub);
-
-        if (account == null && createIfNotExists)
-        {
-            _logger.LogInformation("Account not found for user {UserId}, creating new account", sub);
-            var identityProvider = principal.Claims
-                            .FirstOrDefault(c => c.Type == "idp")?.Value;
-            var provider = await _context.Providers
-                .FirstOrDefaultAsync(p => p.Name == identityProvider);
-
-            if (provider == null)
-            {
-                _logger.LogInformation("Provider {ProviderName} not found, creating new provider", identityProvider ?? "Unknown");
-                provider = new Provider
-                {
-                    Name = identityProvider ?? "Unknown"
-                };
-                _context.Providers.Add(provider);
-                await _context.SaveChangesAsync();
-            }
-
-            account = new Account
-            {
-                UserId = sub,
-                Provider = provider, // Set appropriate provider ID
-                EmailAddress = principal.Email(),
-            };
-
-            updateAccount(account);
-
-            _context.Accounts.Add(account);
+            provider.Name = identityProvider!;
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Created new account for user {UserId} with email {Email}", sub, account.EmailAddress);
-        }
-        else if (account != null)
-        {
-            _logger.LogDebug("Account found for user {UserId}", sub);
-        }
-        else
-        {
-            _logger.LogWarning("Account not found for user {UserId} and createIfNotExists is false", sub);
         }
 
-        return account!;
+        var account = new Account
+        {
+            UserId = userId,
+            EmailAddress = email ?? string.Empty,
+            Provider = provider,
+            ProviderId = provider.Id
+        };
+
+        updateAccount(account);
+        _context.Accounts.Add(account);
+        await _context.SaveChangesAsync();
+        return account;
     }
 }

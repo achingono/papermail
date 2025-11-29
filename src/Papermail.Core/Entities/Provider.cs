@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Papermail.Core.Configuration;
 
 namespace Papermail.Core.Entities;
 
@@ -20,6 +21,21 @@ public class Provider: IEntity
     /// </summary>
     [Required]
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the IMAP settings for the provider.
+    /// </summary>
+    public ImapSettings Imap { get; set; } = new ImapSettings();
+
+    /// <summary>
+    /// Gets or sets the SMTP settings for the provider.
+    /// </summary>
+    public SmtpSettings Smtp { get; set; } = new SmtpSettings();
+
+    /// <summary>
+    /// Collection of domains that map to this provider (e.g. hotmail.com, live.com).
+    /// </summary>
+    public virtual ICollection<Domain> Domains { get; set; } = new List<Domain>();
 
     /// <summary>
     /// Gets or sets the collection of accounts associated with this provider.

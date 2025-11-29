@@ -25,13 +25,20 @@ public class TokenService : ITokenService
     /// <param name="_dataProtectionProvider">The data protection provider for encrypting and decrypting tokens.</param>
     /// <param name="smtpOptions">SMTP configuration settings for fallback authentication.</param>
     /// <param name="logger">The logger instance for logging operations.</param>
-    public TokenService(DataContext dbContext, IDataProtectionProvider _dataProtectionProvider, IOptions<SmtpSettings> smtpOptions, ILogger<TokenService> logger)
+    public TokenService(DataContext dbContext, IDataProtectionProvider _dataProtectionProvider, 
+        SmtpSettings smtpSettings, ILogger<TokenService> logger)
     {
         _dbContext = dbContext;
         _protector = _dataProtectionProvider.CreateProtector("RefreshTokens");
-        _smtpSettings = smtpOptions.Value;
+        _smtpSettings = smtpSettings;
         _logger = logger;
     }
+
+    // Backward-compatible constructor for tests/services providing IOptions<SmtpSettings>
+    public TokenService(DataContext dbContext, IDataProtectionProvider _dataProtectionProvider,
+        Microsoft.Extensions.Options.IOptions<SmtpSettings> smtpOptions, ILogger<TokenService> logger)
+        : this(dbContext, _dataProtectionProvider, smtpOptions.Value, logger)
+    { }
 
     /// <summary>
     /// Retrieves the decrypted access token for a user if it hasn't expired.
@@ -138,7 +145,9 @@ public class TokenService : ITokenService
     /// <returns>The encrypted token string.</returns>
     public string ProtectToken(string token)
     {
-        _logger.LogDebug("ProtectToken called, token length: {TokenLength}", token?.Length ?? 0);
+        if (string.IsNullOrEmpty(token))
+            throw new ArgumentNullException(nameof(token));
+        _logger.LogDebug("ProtectToken called, token length: {TokenLength}", token.Length);
         var protectedToken = _protector.Protect(token);
         _logger.LogDebug("Token successfully encrypted, protected token length: {ProtectedTokenLength}", protectedToken.Length);
         return protectedToken;

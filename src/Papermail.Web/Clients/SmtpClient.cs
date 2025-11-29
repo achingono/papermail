@@ -24,9 +24,9 @@ public class SmtpClient : Papermail.Data.Clients.ISmtpClient
     /// </summary>
     /// <param name="options">The SMTP configuration settings.</param>
     /// <param name="logger">The logger instance for logging operations.</param>
-    public SmtpClient(IOptions<SmtpSettings> options, ILogger<SmtpClient> logger)
+    public SmtpClient(SmtpSettings settings, ILogger<SmtpClient> logger)
     {
-        settings = options.Value;
+        this.settings = settings;
         this.logger = logger;
         if (settings.TrustCertificates)
         {

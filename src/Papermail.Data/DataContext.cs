@@ -26,4 +26,45 @@ public class DataContext : DbContext
     /// Gets or sets the database set for email providers.
     /// </summary>
     public DbSet<Provider> Providers { get; set; }
+
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Configure relationships and constraints if needed
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.Provider)
+            .WithMany(p => p.Accounts)
+            .HasForeignKey(a => a.ProviderId);
+
+        // ensure the account email is unique
+        modelBuilder.Entity<Account>()
+            .HasIndex(a => a.EmailAddress)
+            .IsUnique();
+
+        // ensure the provider name is unique
+        modelBuilder.Entity<Provider>()
+            .HasIndex(p => p.Name)
+            .IsUnique();
+
+        // provider domains map many domains to one provider
+        modelBuilder.Entity<Domain>()
+            .HasIndex(d => d.Name)
+            .IsUnique();
+
+        modelBuilder.Entity<Provider>()
+            .HasMany(p => p.Domains)
+            .WithOne(d => d.Provider)
+            .HasForeignKey(d => d.ProviderId);
+        
+        // Configure owned Provider settings
+        modelBuilder.Entity<Provider>()
+            .OwnsOne(p => p.Imap)
+            .WithOwner();
+        
+        modelBuilder.Entity<Provider>()
+            .OwnsOne(p => p.Smtp)
+            .WithOwner();
+    }
 }

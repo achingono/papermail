@@ -27,6 +27,6 @@
     "claim_mapping": {
         "openid": [ "sub", "sid" ],
         "email": [ "email", "email_verified" ],
-        "profile": [ "name", "nickname", "given_name", "family_name", "groups", "picture"]
+        "profile": [ "name", "nickname", "given_name", "family_name", "groups", "picture", "idp" ]
     }
 }
