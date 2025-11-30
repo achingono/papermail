@@ -30,6 +30,20 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Friendly page for access denied or user consent refusal.
+    /// </summary>
+    [HttpGet("access-denied")]
+    public IActionResult AccessDenied()
+    {
+        return new ContentResult
+        {
+            Content = "Access was denied by the identity provider. Please try again and accept the requested permissions, or contact support if the problem persists.",
+            ContentType = "text/plain",
+            StatusCode = StatusCodes.Status403Forbidden
+        };
+    }
+
+    /// <summary>
     /// Handles authentication for a specified scheme, creates or loads the user, and sets authentication cookie.
     /// </summary>
     /// <param name="scheme">The authentication scheme to use (google, microsoft, apple, facebook, openidconnect).</param>
