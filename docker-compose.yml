@@ -44,6 +44,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       CONNECTIONSTRINGS__SQL: "Server=sql,1433;Database=${SQL_DATABASE:-Papermail};User Id=sa;Password=${SQL_PASSWORD};TrustServerCertificate=True"
+      CONNECTIONSTRINGS__REDIS: "localhost:${REDIS_PORT:-3079},abortConnect=false,connectRetry=10"
       IMAP__HOST: mail.papermail.local
       IMAP__PORT: 143
       IMAP__USESSL: "true"
@@ -137,6 +138,14 @@ services:
       # Override default users with known credentials
       - USERS=[{"id":"945dc90b-02ac-43e5-a4ab-2db744dce149","email":"admin@papermail.local","email_verified":true,"name":"Administrator Account","nickname":"admin","given_name":"Administrator","family_name":"Account","password":"P@ssw0rd","groups":["Everyone","Administrators"]},{"id":"a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d","email":"user@papermail.local","email_verified":true,"name":"User Account","nickname":"user","given_name":"User","family_name":"Account","password":"P@ssw0rd","groups":["Everyone"]}]
     restart: unless-stopped
+    networks:
+      - papermail-network
+
+  redis:
+    image: redis/redis-stack
+    ports:
+      - "${REDIS_PORT:-3079}:6379"
+      - "${REDIS_HTTP_PORT:-3080}:8001"
     networks:
       - papermail-network
 

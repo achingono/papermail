@@ -3,6 +3,8 @@ using Papermail.Data.Models;
 using Papermail.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace Papermail.Data.Services;
 
@@ -14,6 +16,8 @@ public class EmailService : IEmailService
     private readonly IEmailRepository _emailRepository;
     private readonly DataContext _context;
     private readonly ILogger<EmailService> _logger;
+    private readonly IDistributedCache _cache;
+    private const int CacheSeconds = 60; // base absolute expiration
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EmailService"/> class.
@@ -22,12 +26,41 @@ public class EmailService : IEmailService
     /// <param name="context">The database context for account lookup.</param>
     /// <param name="logger">The logger for logging email operations.</param>
     /// <exception cref="ArgumentNullException">Thrown when emailRepository, context, or logger is null.</exception>
-    public EmailService(IEmailRepository emailRepository, DataContext context, ILogger<EmailService> logger)
+    public EmailService(IEmailRepository emailRepository, DataContext context, ILogger<EmailService> logger, IDistributedCache cache)
     {
         _emailRepository = emailRepository ?? throw new ArgumentNullException(nameof(emailRepository));
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
+
+    private async Task<int> GetUserVersionAsync(string userId)
+    {
+        var key = $"email:{userId}:version";
+        var existing = await _cache.GetStringAsync(key);
+        if (int.TryParse(existing, out var v)) return v;
+        // initialize
+        await _cache.SetStringAsync(key, "1");
+        return 1;
+    }
+
+    private async Task IncrementUserVersionAsync(string userId)
+    {
+        var key = $"email:{userId}:version";
+        var existing = await _cache.GetStringAsync(key);
+        var v = 1;
+        if (int.TryParse(existing, out var parsed)) v = parsed + 1;
+        await _cache.SetStringAsync(key, v.ToString());
+    }
+
+    private static string BuildKey(string userId, string category, int version, params object[] parts)
+        => $"email:{userId}:{category}:v{version}:{string.Join(':', parts)}";
+
+    private static DistributedCacheEntryOptions CacheEntryOptions() => new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(CacheSeconds),
+        SlidingExpiration = TimeSpan.FromSeconds(CacheSeconds / 2)
+    };
 
     /// <summary>
     /// Retrieves inbox emails with pagination.
@@ -60,8 +93,17 @@ public class EmailService : IEmailService
             throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
         }
 
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "inbox", version, page, pageSize);
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+            return JsonSerializer.Deserialize<List<EmailItemModel>>(cached) ?? new List<EmailItemModel>();
+        }
         var emails = await _emailRepository.GetInboxAsync(userId, page, pageSize);
         var result = emails.Select(EmailMapper.ToListItemDto).ToList();
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), CacheEntryOptions());
         _logger.LogInformation("Retrieved {Count} inbox emails for user {UserId}", result.Count, userId);
         return result;
     }
@@ -97,8 +139,17 @@ public class EmailService : IEmailService
             throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
         }
 
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "sent", version, page, pageSize);
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+            return JsonSerializer.Deserialize<List<EmailItemModel>>(cached) ?? new List<EmailItemModel>();
+        }
         var emails = await _emailRepository.GetSentAsync(userId, page, pageSize);
         var result = emails.Select(EmailMapper.ToListItemDto).ToList();
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), CacheEntryOptions());
         _logger.LogInformation("Retrieved {Count} sent emails for user {UserId}", result.Count, userId);
         return result;
     }
@@ -134,8 +185,17 @@ public class EmailService : IEmailService
             throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
         }
 
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "drafts", version, page, pageSize);
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+            return JsonSerializer.Deserialize<List<EmailItemModel>>(cached) ?? new List<EmailItemModel>();
+        }
         var emails = await _emailRepository.GetDraftsAsync(userId, page, pageSize);
         var result = emails.Select(EmailMapper.ToListItemDto).ToList();
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), CacheEntryOptions());
         _logger.LogInformation("Retrieved {Count} draft emails for user {UserId}", result.Count, userId);
         return result;
     }
@@ -149,12 +209,25 @@ public class EmailService : IEmailService
     public async Task<EmailModel?> GetEmailByIdAsync(Guid emailId, string userId)
     {
         _logger.LogDebug("GetEmailByIdAsync called for emailId {EmailId}, userId {UserId}", emailId, userId);
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "detail", version, emailId);
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+            return JsonSerializer.Deserialize<EmailModel>(cached);
+        }
         var email = await _emailRepository.GetByIdAsync(emailId, userId);
         if (email == null)
         {
             _logger.LogWarning("Email {EmailId} not found for user {UserId}", emailId, userId);
         }
-        return email == null ? null : EmailMapper.ToDetailDto(email);
+        var dto = email == null ? null : EmailMapper.ToDetailDto(email);
+        if (dto != null)
+        {
+            await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(dto), CacheEntryOptions());
+        }
+        return dto;
     }
 
     /// <summary>
@@ -166,6 +239,7 @@ public class EmailService : IEmailService
     {
         _logger.LogDebug("MarkAsReadAsync called for emailId {EmailId}, userId {UserId}", emailId, userId);
         await _emailRepository.MarkReadAsync(emailId, userId);
+        await IncrementUserVersionAsync(userId); // invalidate cache by version bump
         _logger.LogInformation("Marked email {EmailId} as read for user {UserId}", emailId, userId);
     }
 
@@ -205,6 +279,7 @@ public class EmailService : IEmailService
 
         var email = EmailMapper.ToEntity(request, account.EmailAddress);
         await _emailRepository.SaveDraftAsync(email, userId);
+        await IncrementUserVersionAsync(userId);
         _logger.LogInformation("Saved draft email {EmailId} for user {UserId}", email.Id, userId);
         return email.Id;
     }
@@ -245,6 +320,7 @@ public class EmailService : IEmailService
 
         var email = EmailMapper.ToEntity(request, account.EmailAddress);
         await _emailRepository.SendEmailAsync(email, userId);
+        await IncrementUserVersionAsync(userId);
         _logger.LogInformation("Sent email {EmailId} from user {UserId} to {Recipients}", email.Id, userId, string.Join(", ", request.To));
         return email.Id;
     }
@@ -258,6 +334,7 @@ public class EmailService : IEmailService
     {
         _logger.LogDebug("DeleteEmailAsync called for emailId {EmailId}, userId {UserId}", emailId, userId);
         await _emailRepository.DeleteAsync(emailId, userId);
+        await IncrementUserVersionAsync(userId);
         _logger.LogInformation("Deleted email {EmailId} for user {UserId}", emailId, userId);
     }
 
@@ -283,8 +360,17 @@ public class EmailService : IEmailService
             throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
         }
 
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "deleted", version, page, pageSize);
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+            return JsonSerializer.Deserialize<List<EmailItemModel>>(cached) ?? new List<EmailItemModel>();
+        }
         var emails = await _emailRepository.GetDeletedAsync(userId, page, pageSize);
         var result = emails.Select(EmailMapper.ToListItemDto).ToList();
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), CacheEntryOptions());
         _logger.LogInformation("Retrieved {Count} deleted emails for user {UserId}", result.Count, userId);
         return result;
     }
@@ -311,8 +397,17 @@ public class EmailService : IEmailService
             throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
         }
 
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "archive", version, page, pageSize);
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+            return JsonSerializer.Deserialize<List<EmailItemModel>>(cached) ?? new List<EmailItemModel>();
+        }
         var emails = await _emailRepository.GetArchiveAsync(userId, page, pageSize);
         var result = emails.Select(EmailMapper.ToListItemDto).ToList();
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), CacheEntryOptions());
         _logger.LogInformation("Retrieved {Count} archive emails for user {UserId}", result.Count, userId);
         return result;
     }
@@ -339,8 +434,17 @@ public class EmailService : IEmailService
             throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be between 1 and 200");
         }
 
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "junk", version, page, pageSize);
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+            return JsonSerializer.Deserialize<List<EmailItemModel>>(cached) ?? new List<EmailItemModel>();
+        }
         var emails = await _emailRepository.GetJunkAsync(userId, page, pageSize);
         var result = emails.Select(EmailMapper.ToListItemDto).ToList();
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), CacheEntryOptions());
         _logger.LogInformation("Retrieved {Count} junk emails for user {UserId}", result.Count, userId);
         return result;
     }    
@@ -349,42 +453,78 @@ public class EmailService : IEmailService
     {
         if (string.IsNullOrWhiteSpace(userId))
             throw new ArgumentException("User ID is required", nameof(userId));
-        return await _emailRepository.GetInboxCountAsync(userId);
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "count", version, "inbox");
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null && int.TryParse(cached, out var cachedCount)) return cachedCount;
+        var count = await _emailRepository.GetInboxCountAsync(userId);
+        await _cache.SetStringAsync(cacheKey, count.ToString(), CacheEntryOptions());
+        return count;
     }
 
     public async Task<int> GetSentCountAsync(string userId)
     {
         if (string.IsNullOrWhiteSpace(userId))
             throw new ArgumentException("User ID is required", nameof(userId));
-        return await _emailRepository.GetSentCountAsync(userId);
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "count", version, "sent");
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null && int.TryParse(cached, out var cachedCount)) return cachedCount;
+        var count = await _emailRepository.GetSentCountAsync(userId);
+        await _cache.SetStringAsync(cacheKey, count.ToString(), CacheEntryOptions());
+        return count;
     }
 
     public async Task<int> GetDraftsCountAsync(string userId)
     {
         if (string.IsNullOrWhiteSpace(userId))
             throw new ArgumentException("User ID is required", nameof(userId));
-        return await _emailRepository.GetDraftsCountAsync(userId);
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "count", version, "drafts");
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null && int.TryParse(cached, out var cachedCount)) return cachedCount;
+        var count = await _emailRepository.GetDraftsCountAsync(userId);
+        await _cache.SetStringAsync(cacheKey, count.ToString(), CacheEntryOptions());
+        return count;
     }
 
     public async Task<int> GetDeletedCountAsync(string userId)
     {
         if (string.IsNullOrWhiteSpace(userId))
             throw new ArgumentException("User ID is required", nameof(userId));
-        return await _emailRepository.GetDeletedCountAsync(userId);
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "count", version, "deleted");
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null && int.TryParse(cached, out var cachedCount)) return cachedCount;
+        var count = await _emailRepository.GetDeletedCountAsync(userId);
+        await _cache.SetStringAsync(cacheKey, count.ToString(), CacheEntryOptions());
+        return count;
     }
 
     public async Task<int> GetArchiveCountAsync(string userId)
     {
         if (string.IsNullOrWhiteSpace(userId))
             throw new ArgumentException("User ID is required", nameof(userId));
-        return await _emailRepository.GetArchiveCountAsync(userId);
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "count", version, "archive");
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null && int.TryParse(cached, out var cachedCount)) return cachedCount;
+        var count = await _emailRepository.GetArchiveCountAsync(userId);
+        await _cache.SetStringAsync(cacheKey, count.ToString(), CacheEntryOptions());
+        return count;
     }
 
     public async Task<int> GetJunkCountAsync(string userId)
     {
         if (string.IsNullOrWhiteSpace(userId))
             throw new ArgumentException("User ID is required", nameof(userId));
-        return await _emailRepository.GetJunkCountAsync(userId);
+        var version = await GetUserVersionAsync(userId);
+        var cacheKey = BuildKey(userId, "count", version, "junk");
+        var cached = await _cache.GetStringAsync(cacheKey);
+        if (cached != null && int.TryParse(cached, out var cachedCount)) return cachedCount;
+        var count = await _emailRepository.GetJunkCountAsync(userId);
+        await _cache.SetStringAsync(cacheKey, count.ToString(), CacheEntryOptions());
+        return count;
     }
 
     public async Task MoveToArchiveAsync(Guid emailId, string userId)
@@ -398,6 +538,7 @@ public class EmailService : IEmailService
         }
 
         await _emailRepository.MoveToArchiveAsync(emailId, userId);
+        await IncrementUserVersionAsync(userId);
         _logger.LogInformation("Moved email {EmailId} to Archive for user {UserId}", emailId, userId);
     }
 
@@ -412,6 +553,7 @@ public class EmailService : IEmailService
         }
 
         await _emailRepository.MoveToJunkAsync(emailId, userId);
+        await IncrementUserVersionAsync(userId);
         _logger.LogInformation("Moved email {EmailId} to Junk for user {UserId}", emailId, userId);
     }
 }

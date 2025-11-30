@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Distributed;
 using Moq;
 using Papermail.Core.Entities;
 using Papermail.Data;
@@ -15,18 +16,20 @@ public class EmailServiceTests
     private readonly Mock<ILogger<EmailService>> _mockLogger;
     private readonly DataContext _context;
     private readonly EmailService _service;
+    private readonly FakeDistributedCache _cache;
 
     public EmailServiceTests()
     {
         _mockRepository = new Mock<IEmailRepository>();
         _mockLogger = new Mock<ILogger<EmailService>>();
+        _cache = new FakeDistributedCache();
         
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         _context = new DataContext(options);
         
-        _service = new EmailService(_mockRepository.Object, _context, _mockLogger.Object);
+        _service = new EmailService(_mockRepository.Object, _context, _mockLogger.Object, _cache);
     }
 
     [Fact]

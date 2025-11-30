@@ -65,6 +65,13 @@ builder.Services.TryAddScoped<SmtpSettings>(provider =>
 
 builder.Services.AddDataProtection();
 
+// Register distributed Redis cache for application data caching
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "Papermail:";
+});
+
 builder.Services.AddDbContext<DataContext>(options =>
 {
     var connectionStringName = "Sql";
