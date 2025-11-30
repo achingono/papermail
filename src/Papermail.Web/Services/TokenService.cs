@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Papermail.Core.Configuration;
 using Papermail.Data;
 using Papermail.Data.Services;
@@ -25,6 +26,7 @@ public class TokenService : ITokenService
     /// <param name="_dataProtectionProvider">The data protection provider for encrypting and decrypting tokens.</param>
     /// <param name="smtpOptions">SMTP configuration settings for fallback authentication.</param>
     /// <param name="logger">The logger instance for logging operations.</param>
+    [ActivatorUtilitiesConstructor]
     public TokenService(DataContext dbContext, IDataProtectionProvider _dataProtectionProvider, 
         SmtpSettings smtpSettings, ILogger<TokenService> logger)
     {
@@ -33,12 +35,6 @@ public class TokenService : ITokenService
         _smtpSettings = smtpSettings;
         _logger = logger;
     }
-
-    // Backward-compatible constructor for tests/services providing IOptions<SmtpSettings>
-    public TokenService(DataContext dbContext, IDataProtectionProvider _dataProtectionProvider,
-        Microsoft.Extensions.Options.IOptions<SmtpSettings> smtpOptions, ILogger<TokenService> logger)
-        : this(dbContext, _dataProtectionProvider, smtpOptions.Value, logger)
-    { }
 
     /// <summary>
     /// Retrieves the decrypted access token for a user if it hasn't expired.

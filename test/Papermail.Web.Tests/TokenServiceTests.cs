@@ -15,7 +15,7 @@ public class TokenServiceTests
 {
     private readonly DataContext _context;
     private readonly IDataProtectionProvider _dataProtectionProvider;
-    private readonly Mock<IOptions<SmtpSettings>> _mockSmtpOptions;
+    private readonly Mock<SmtpSettings> _mockSmtpSettings;
     private readonly Mock<ILogger<TokenService>> _mockLogger;
     private readonly TokenService _service;
 
@@ -32,8 +32,8 @@ public class TokenServiceTests
         var serviceProvider = serviceCollection.BuildServiceProvider();
         _dataProtectionProvider = serviceProvider.GetRequiredService<IDataProtectionProvider>();
 
-        _mockSmtpOptions = new Mock<IOptions<SmtpSettings>>();
-        _mockSmtpOptions.Setup(o => o.Value).Returns(new SmtpSettings
+        _mockSmtpSettings = new Mock<SmtpSettings>();
+        _mockSmtpSettings.Setup(o => o).Returns(new SmtpSettings
         {
             Username = "smtp-user",
             Password = "smtp-password"
@@ -44,7 +44,7 @@ public class TokenServiceTests
         _service = new TokenService(
             _context,
             _dataProtectionProvider,
-            _mockSmtpOptions.Object,
+            _mockSmtpSettings.Object,
             _mockLogger.Object
         );
     }

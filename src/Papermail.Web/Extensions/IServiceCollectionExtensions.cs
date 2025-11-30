@@ -58,144 +58,177 @@ public static class IServiceCollectionExtensions
             // to support both authentication methods
             options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
         })
-        .AddCookie()
+        .AddCookie(options =>
+        {
+            options.Cookie.SameSite = SameSiteMode.Unspecified;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        })
         .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
+        {
+            // 1. Authority: This tells the app where to find the B2C metadata
+            options.Authority = settings.Authority;
+            options.ClientId = settings.ClientId;
+            options.ClientSecret = settings.ClientSecret;
+            options.RequireHttpsMetadata = settings.RequireHttpsMetadata;
+            if (!string.IsNullOrWhiteSpace(settings.MetadataAddress))
             {
-                // 1. Authority: This tells the app where to find the B2C metadata
-                options.Authority = settings.Authority;
-                options.ClientId = settings.ClientId;
-                options.ClientSecret = settings.ClientSecret;
-                options.RequireHttpsMetadata = settings.RequireHttpsMetadata;
-                if (!string.IsNullOrWhiteSpace(settings.MetadataAddress))
+                options.MetadataAddress = settings.MetadataAddress;
+            }
+
+            // In Development, relax backchannel certificate validation to allow local dev certs
+            if (environment.IsDevelopment())
+            {
+                options.BackchannelHttpHandler = new HttpClientHandler
                 {
-                    options.MetadataAddress = settings.MetadataAddress;
-                }
-
-                // In Development, relax backchannel certificate validation to allow local dev certs
-                if (environment.IsDevelopment())
-                {
-                    options.BackchannelHttpHandler = new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-                    };
-                }
-
-                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.ResponseType = OpenIdConnectResponseType.Code;
-
-                options.ResponseType = "code"; // Use Authorization Code flow (standard for security)
-                options.SaveTokens = true;     // Saves the tokens in the cookie so you can read them later
-
-                // 3. Scopes: Define the scopes you want to request
-                foreach (var scope in settings.Scopes)
-                {
-                    options.Scope.Add(scope);
-                }
-
-                //options.GetClaimsFromUserInfoEndpoint = true;
-
-                // 4. Token Validation
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    NameClaimType = "name" // Maps the "name" claim to User.Identity.Name
+                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                 };
+            }
 
-                // Handle claim mapping when tokens are received
-                options.Events = new OpenIdConnectEvents
+            options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.ResponseType = OpenIdConnectResponseType.Code;
+
+            options.ResponseType = "code"; // Use Authorization Code flow (standard for security)
+            options.SaveTokens = true;     // Saves the tokens in the cookie so you can read them later
+
+            // 3. Scopes: Define the scopes you want to request
+            foreach (var scope in settings.Scopes)
+            {
+                options.Scope.Add(scope);
+            }
+
+            //options.GetClaimsFromUserInfoEndpoint = true;
+
+            // 4. Token Validation
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                NameClaimType = "name" // Maps the "name" claim to User.Identity.Name
+            };
+
+            // 5. Address Correlation Failed issue
+            options.CorrelationCookie.SameSite = SameSiteMode.Unspecified;
+            options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.NonceCookie.SameSite = SameSiteMode.Unspecified;
+            options.NonceCookie.SecurePolicy = CookieSecurePolicy.Always;
+
+            // This alone fixes the problem for most people in 2025
+            options.UsePkce = true;
+
+            // Handle claim mapping when tokens are received
+            options.Events = new OpenIdConnectEvents
+            {
+                OnRemoteFailure = context =>
                 {
-                    OnTokenValidated = async context =>
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<OpenIdConnectEvents>>();
+                    var error = context.Failure?.Message ?? "Unknown remote failure";
+                    logger.LogWarning("OIDC remote failure: {Error}", error);
+
+                    // If user denied consent, redirect to a friendly page
+                    if (context.Failure is OpenIdConnectProtocolException protoEx &&
+                        (protoEx.Message?.Contains("access_denied", StringComparison.OrdinalIgnoreCase) == true ||
+                         protoEx.Message?.Contains("AADB2C90273", StringComparison.OrdinalIgnoreCase) == true))
                     {
-                        if (context.Principal?.Identity is ClaimsIdentity identity)
+                        // Prevent the exception from bubbling
+                        context.HandleResponse();
+                        context.Response.Redirect("/auth/access-denied");
+                        return Task.CompletedTask;
+                    }
+
+                    // Default: let it bubble up (developer exception page will show details)
+                    return Task.CompletedTask;
+                },
+                OnTokenValidated = async context =>
+                {
+                    if (context.Principal?.Identity is ClaimsIdentity identity)
+                    {
+                        // Log all claims for debugging
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<OpenIdConnectEvents>>();
+                        logger.LogInformation("OIDC Claims received: {Claims}",
+                            string.Join(", ", identity.Claims.Select(c => $"{c.Type}={c.Value}")));
+
+                        // Map 'sub' claim to both NameIdentifier and 'sid' for compatibility
+                        var subClaim = identity.FindFirst("sub");
+                        if (subClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.NameIdentifier))
                         {
-                            // Log all claims for debugging
-                            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<OpenIdConnectEvents>>();
-                            logger.LogInformation("OIDC Claims received: {Claims}",
-                                string.Join(", ", identity.Claims.Select(c => $"{c.Type}={c.Value}")));
+                            identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, subClaim.Value));
+                            identity.AddClaim(new Claim("sid", subClaim.Value));
+                        }
 
-                            // Map 'sub' claim to both NameIdentifier and 'sid' for compatibility
-                            var subClaim = identity.FindFirst("sub");
-                            if (subClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.NameIdentifier))
+                        // Ensure standard claim types are mapped
+                        var emailClaim = identity.FindFirst("email")
+                            ?? identity.FindFirst(ClaimTypes.Email)
+                            ?? identity.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
+
+                        if (emailClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.Email))
+                        {
+                            identity.AddClaim(new Claim(ClaimTypes.Email, emailClaim.Value));
+                            // Also add simplified "email" claim for compatibility
+                            if (!identity.HasClaim(c => c.Type == "email"))
                             {
-                                identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, subClaim.Value));
-                                identity.AddClaim(new Claim("sid", subClaim.Value));
-                            }
-
-                            // Ensure standard claim types are mapped
-                            var emailClaim = identity.FindFirst("email")
-                                ?? identity.FindFirst(ClaimTypes.Email)
-                                ?? identity.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
-
-                            if (emailClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.Email))
-                            {
-                                identity.AddClaim(new Claim(ClaimTypes.Email, emailClaim.Value));
-                                // Also add simplified "email" claim for compatibility
-                                if (!identity.HasClaim(c => c.Type == "email"))
-                                {
-                                    identity.AddClaim(new Claim("email", emailClaim.Value));
-                                }
-                            }
-
-                            var nameClaim = identity.FindFirst("name");
-                            if (nameClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.Name))
-                            {
-                                identity.AddClaim(new Claim(ClaimTypes.Name, nameClaim.Value));
-                            }
-
-                            var givenNameClaim = identity.FindFirst("given_name");
-                            if (givenNameClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.GivenName))
-                            {
-                                identity.AddClaim(new Claim(ClaimTypes.GivenName, givenNameClaim.Value));
-                            }
-
-                            var familyNameClaim = identity.FindFirst("family_name");
-                            if (familyNameClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.Surname))
-                            {
-                                identity.AddClaim(new Claim(ClaimTypes.Surname, familyNameClaim.Value));
-                            }
-
-                            // Create or update account in database
-                            var accountService = context.HttpContext.RequestServices.GetRequiredService<IAccountService>();
-                            var tokenService = context.HttpContext.RequestServices.GetRequiredService<ITokenService>();
-                            
-                            try
-                            {
-                                await accountService.EnsureAccountAsync(context.Principal, (account) =>
-                                {
-                                    var expiresAt = context.Properties?.Items.TryGetValue(".Token.expires_at", out var expiresAtValue) == true
-                                        ? expiresAtValue
-                                        : null;
-                                    var refreshToken = context.Properties?.Items.TryGetValue(".Token.refresh_token", out var refreshTokenValue) == true
-                                        ? refreshTokenValue
-                                        : null;
-                                    var accessToken = context.Properties?.Items.TryGetValue(".Token.access_token", out var accessTokenValue) == true
-                                        ? accessTokenValue
-                                        : null;
-
-                                    account.AccessToken = string.IsNullOrWhiteSpace(accessToken) 
-                                        ? string.Empty 
-                                        : tokenService.ProtectToken(accessToken);
-                                    account.RefreshToken = string.IsNullOrWhiteSpace(refreshToken)
-                                        ? string.Empty
-                                        : tokenService.ProtectToken(refreshToken);
-                                    account.ExpiresAt = string.IsNullOrWhiteSpace(expiresAt)
-                                        ? DateTimeOffset.UtcNow.AddHours(1)
-                                        : DateTimeOffset.Parse(expiresAt);
-                                    account.Scopes = context.Properties?.Items.TryGetValue(".Token.scope", out var scopeValue) == true
-                                        ? scopeValue.Split(' ')
-                                        : [];
-                                    account.DisplayName = identity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
-                                }, createIfNotExists: true);
-                                
-                                logger.LogInformation("Account ensured for user {UserId}", context.Principal.FindFirst("sub")?.Value);
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.LogError(ex, "Failed to ensure account during OIDC token validation");
+                                identity.AddClaim(new Claim("email", emailClaim.Value));
                             }
                         }
+
+                        var nameClaim = identity.FindFirst("name");
+                        if (nameClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.Name))
+                        {
+                            identity.AddClaim(new Claim(ClaimTypes.Name, nameClaim.Value));
+                        }
+
+                        var givenNameClaim = identity.FindFirst("given_name");
+                        if (givenNameClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.GivenName))
+                        {
+                            identity.AddClaim(new Claim(ClaimTypes.GivenName, givenNameClaim.Value));
+                        }
+
+                        var familyNameClaim = identity.FindFirst("family_name");
+                        if (familyNameClaim != null && !identity.HasClaim(c => c.Type == ClaimTypes.Surname))
+                        {
+                            identity.AddClaim(new Claim(ClaimTypes.Surname, familyNameClaim.Value));
+                        }
+
+                        // Create or update account in database
+                        var accountService = context.HttpContext.RequestServices.GetRequiredService<IAccountService>();
+                        var tokenService = context.HttpContext.RequestServices.GetRequiredService<ITokenService>();
+                        
+                        try
+                        {
+                            await accountService.EnsureAccountAsync(context.Principal, (account) =>
+                            {
+                                var expiresAt = context.Properties?.Items.TryGetValue(".Token.expires_at", out var expiresAtValue) == true
+                                    ? expiresAtValue
+                                    : null;
+                                var refreshToken = context.Properties?.Items.TryGetValue(".Token.refresh_token", out var refreshTokenValue) == true
+                                    ? refreshTokenValue
+                                    : null;
+                                var accessToken = context.Properties?.Items.TryGetValue(".Token.access_token", out var accessTokenValue) == true
+                                    ? accessTokenValue
+                                    : null;
+
+                                account.AccessToken = string.IsNullOrWhiteSpace(accessToken) 
+                                    ? string.Empty 
+                                    : tokenService.ProtectToken(accessToken);
+                                account.RefreshToken = string.IsNullOrWhiteSpace(refreshToken)
+                                    ? string.Empty
+                                    : tokenService.ProtectToken(refreshToken);
+                                account.ExpiresAt = string.IsNullOrWhiteSpace(expiresAt)
+                                    ? DateTimeOffset.UtcNow.AddHours(1)
+                                    : DateTimeOffset.Parse(expiresAt);
+                                account.Scopes = context.Properties?.Items.TryGetValue(".Token.scope", out var scopeValue) == true
+                                    ? (scopeValue ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                    : [];
+                                account.DisplayName = identity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
+                            }, createIfNotExists: true);
+                            
+                            logger.LogInformation("Account ensured for user {UserId}", context.Principal.FindFirst("sub")?.Value);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, "Failed to ensure account during OIDC token validation");
+                        }
                     }
-                };
-            });
+                }
+            };
+        });
 
         return services;
     }

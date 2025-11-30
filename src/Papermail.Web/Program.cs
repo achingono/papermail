@@ -27,10 +27,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 // Configure Default SMTP settings from configuration
-builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
+//builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
 
 // Configure Default IMAP settings from configuration
-builder.Services.Configure<ImapSettings>(builder.Configuration.GetSection("Imap"));
+//builder.Services.Configure<ImapSettings>(builder.Configuration.GetSection("Imap"));
 
 builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.TryAddSingleton<IPrincipalAccessor, PrincipalAccessor>();
