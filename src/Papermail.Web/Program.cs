@@ -65,6 +65,10 @@ builder.Services.TryAddScoped<SmtpSettings>(provider =>
 
 builder.Services.AddDataProtection();
 
+// Prefetch queue & background service
+builder.Services.AddSingleton<IEmailPrefetchQueue, EmailPrefetchQueue>();
+builder.Services.AddHostedService<EmailPrefetchBackgroundService>();
+
 // Register distributed Redis cache for application data caching
 builder.Services.AddStackExchangeRedisCache(options =>
 {

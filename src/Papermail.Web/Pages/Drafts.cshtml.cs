@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Papermail.Data.Models;
 using Papermail.Data.Services;
+using Papermail.Web.Services;
 using System.Security.Claims;
 
 namespace Papermail.Web.Pages;
@@ -13,10 +14,12 @@ namespace Papermail.Web.Pages;
 public class DraftsModel : PageModel
 {
     private readonly IEmailService _emailService;
+    private readonly IEmailPrefetchQueue _prefetchQueue;
 
-    public DraftsModel(IEmailService emailService)
+    public DraftsModel(IEmailService emailService, IEmailPrefetchQueue prefetchQueue)
     {
         _emailService = emailService;
+        _prefetchQueue = prefetchQueue;
     }
 
     public List<EmailItemModel> Items { get; private set; } = new();
@@ -39,6 +42,9 @@ public class DraftsModel : PageModel
         {
             Items = await _emailService.GetDraftsAsync(userId, page, pageSize);
             TotalCount = await _emailService.GetDraftsCountAsync(userId);
+            var nextPage = page + 1;
+            if (nextPage < TotalPages)
+                _prefetchQueue.Enqueue(userId, "drafts", nextPage, 1, pageSize);
         }
         else
         {

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Papermail.Data;
 using Papermail.Data.Models;
 using Papermail.Data.Services;
+using Papermail.Web.Services;
 
 namespace Papermail.Web.Pages;
 
@@ -13,6 +14,7 @@ namespace Papermail.Web.Pages;
 public class InboxModel : PageModel
 {
     private readonly IEmailService _emailService;
+    private readonly IEmailPrefetchQueue _prefetchQueue;
 
     /// <summary>
     /// The items to render in the inbox list.
@@ -26,9 +28,10 @@ public class InboxModel : PageModel
     public int TotalCount { get; private set; }
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
 
-    public InboxModel(IEmailService emailService)
+    public InboxModel(IEmailService emailService, IEmailPrefetchQueue prefetchQueue)
     {
         _emailService = emailService;
+        _prefetchQueue = prefetchQueue;
     }
 
     public async Task OnGetAsync(int page = 0, int pageSize = 50, string sort = "desc")
@@ -50,6 +53,9 @@ public class InboxModel : PageModel
         {
             Items = await _emailService.GetInboxAsync(userId, page, pageSize);
             TotalCount = await _emailService.GetInboxCountAsync(userId);
+            var nextPage = page + 1;
+            if (nextPage < TotalPages)
+                _prefetchQueue.Enqueue(userId, "inbox", nextPage, 2, pageSize);
         }
         catch (InvalidOperationException)
         {
